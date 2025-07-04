@@ -1,29 +1,60 @@
-// controllers/auth.controller.ts
 import { Request, Response } from 'express';
 import authService from '../services/auth.service';
+import roleService from '../services/role.service';
+import { Permission } from '../constants/permissions.constants';
+
+interface AuthResponse {
+  success: boolean;
+  message?: string;
+  user?: any;
+  token?: string;
+  permissions?: Permission[];
+}
 
 class AuthController {
-  async login(req: Request, res: Response): Promise<void> {
+  async login(req: Request, res: Response): Promise<Response<AuthResponse>> {
     try {
       const { userName, password } = req.body;
       const { user, token } = await authService.login(userName, password);
-      res.send({ user, token });
+      
+      const permissions = await roleService.getRolePermissions(user.role.toString());
+      
+      return res.json({
+        success: true,
+        user,
+        token,
+        permissions
+      });
     } catch (error: any) {
-      res.status(400).send({ error: error.message });
+      return res.status(400).json({
+        success: false,
+        message: error.message
+      });
     }
   }
 
-  async getCurrentUser(req: Request, res: Response): Promise<void> {
+  async getCurrentUser(req: Request, res: Response): Promise<Response<AuthResponse>> {
     try {
       const userId = req.tokenData?.userId;
       if (!userId) {
-        res.status(401).send({ error: 'Unauthorized' });
-        return;
+        return res.status(400).json({
+          success: false,
+          message: 'User ID is missing from token data'
+        });
       }
       const user = await authService.getCurrentUser(userId);
-      res.send(user);
+      const permissions = await roleService.getRolePermissions(user.role.toString());
+      
+      return res.json({
+        success: true,
+        user,
+        permissions
+      });
     } catch (error: any) {
-      res.status(400).send({ error: error.message });
+      return res.status(400).json({
+        success: false,
+        message: error.message
+      });
     }
   }
 }

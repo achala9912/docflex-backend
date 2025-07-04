@@ -1,32 +1,31 @@
-import express from "express";
-import roleController from "../../controllers/role.controller";
-import authMiddleware from "../../middlewares/auth.middleware";
-import checkRole from "../../middlewares/role.middleware";
+// 
+
+import express from 'express';
+import roleController from '../../controllers/role.controller';
+import { checkPermission } from '../../middlewares/role.middleware';
+import { PERMISSIONS } from '../../constants/permissions.constants';
 
 const router = express.Router();
 
-// Protect all routes with authentication
-router.use(authMiddleware);
+// All role routes require ROLE_READ permission
+router.use(checkPermission(PERMISSIONS.ROLE_READ));
 
-// Only admin can manage roles
-router.post("/", checkRole(["manage_roles"]), (req, res, next) => {
-  roleController.createRole(req, res).catch(next);
-});
+router.post('/', 
+  checkPermission(PERMISSIONS.ROLE_CREATE),
+  roleController.createRole
+);
 
-router.get("/", checkRole(["view_roles"]), (req, res, next) => {
-  roleController.getAllRoles(req, res).catch(next);
-});
+router.get('/', roleController.getAllRoles);
+router.get('/:roleId', roleController.getRoleById);
 
-router.get("/:roleId", checkRole(["view_roles"]), (req, res, next) => {
-  roleController.getRoleById(req, res).catch(next);
-});
+router.put('/:roleId',
+  checkPermission(PERMISSIONS.ROLE_UPDATE),
+  roleController.updateRole
+);
 
-router.put("/:roleId", checkRole(["manage_roles"]), (req, res, next) => {
-  roleController.updateRole(req, res).catch(next);
-});
-
-router.delete("/:roleId", checkRole(["manage_roles"]), (req, res, next) => {
-  roleController.deleteRole(req, res).catch(next);
-});
+router.delete('/:roleId',
+  checkPermission(PERMISSIONS.ROLE_DELETE),
+  roleController.deleteRole
+);
 
 export default router;

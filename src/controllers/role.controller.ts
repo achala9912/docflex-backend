@@ -2,51 +2,77 @@ import { Request, Response } from 'express';
 import roleService from '../services/role.service';
 
 class RoleController {
-  async createRole(req: Request, res: Response) {
-    try {
-      const role = await roleService.createRole(req.body);
-      res.status(201).send(role);
-    } catch (error: any) {
-      res.status(400).send({ error: error.message });
-    }
-  }
-
-  async getAllRoles(req: Request, res: Response) {
+  // Existing methods...
+  async getAllRoles(req: Request, res: Response): Promise<void> {
     try {
       const roles = await roleService.getAllRoles();
-      res.send(roles);
-    } catch (error: any) {
-      res.status(400).send({ error: error.message });
+      res.json(roles);
+    } catch (error) {
+      this.handleError(res, error, 500, 'Failed to fetch roles');
     }
   }
 
-  async getRoleById(req: Request, res: Response) {
+  async getRoleById(req: Request, res: Response): Promise<void> {
     try {
       const role = await roleService.getRoleById(req.params.roleId);
-      if (!role) return res.status(404).send({ error: 'Role not found' });
-      res.send(role);
-    } catch (error: any) {
-      res.status(400).send({ error: error.message });
+      if (!role) {
+        res.status(404).json({ error: 'Role not found' });
+        return;
+      }
+      res.json(role);
+    } catch (error) {
+      this.handleError(res, error, 500, 'Failed to fetch role');
     }
   }
 
-  async updateRole(req: Request, res: Response) {
+  // Add the createRole method
+  async createRole(req: Request, res: Response): Promise<void> {
     try {
-      const role = await roleService.updateRole(req.params.roleId, req.body);
-      if (!role) return res.status(404).send({ error: 'Role not found' });
-      res.send(role);
-    } catch (error: any) {
-      res.status(400).send({ error: error.message });
+      const newRole = await roleService.createRole(req.body);
+      res.status(201).json(newRole);
+    } catch (error) {
+      this.handleError(res, error, 400, 'Failed to create role');
     }
   }
 
-  async deleteRole(req: Request, res: Response) {
+  async updateRole(req: Request, res: Response): Promise<void> {
     try {
+      const updatedRole = await roleService.updateRole(
+        req.params.roleId,
+        req.body
+      );
+      if (!updatedRole) {
+        res.status(404).json({ error: 'Role not found' });
+        return;
+      }
+      res.json(updatedRole);
+    } catch (error) {
+      this.handleError(res, error, 400, 'Failed to update role');
+    }
+  }
+
+  async deleteRole(req: Request, res: Response): Promise<void> {
+    try {
+      const role = await roleService.getRoleById(req.params.roleId);
+      if (!role) {
+        res.status(404).json({ error: 'Role not found' });
+        return;
+      }
       await roleService.deleteRole(req.params.roleId);
-      res.send({ message: 'Role deleted successfully' });
-    } catch (error: any) {
-      res.status(400).send({ error: error.message });
+      res.status(204).send();
+    } catch (error) {
+      this.handleError(res, error, 500, 'Failed to delete role');
     }
+  }
+
+  private handleError(
+    res: Response,
+    error: unknown,
+    statusCode: number,
+    defaultMessage: string
+  ): void {
+    const errorMessage = error instanceof Error ? error.message : defaultMessage;
+    res.status(statusCode).json({ error: errorMessage });
   }
 }
 
