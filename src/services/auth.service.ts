@@ -5,24 +5,34 @@ import { ITokenData } from '../interfaces/token.interface';
 
 class AuthService {
   async login(userName: string, password: string): Promise<{ user: IUserDocument; token: string }> {
-    // Use type assertion with proper type
+    console.log(`🔐 Attempting login for userName: ${userName}`);
+
     const user = await User.findOne({ userName }).select('+password').exec() as IUserDocument | null;
-    if (!user) throw new Error('Invalid credentials');
+    if (!user) {
+      console.warn(`❌ User not found for userName: ${userName}`);
+      throw new Error('Invalid credentials');
+    }
 
-    // Now TypeScript knows user has comparePassword
     const isMatch = await user.comparePassword(password);
-    if (!isMatch) throw new Error('Invalid credentials');
+    if (!isMatch) {
+      console.warn(`❌ Password mismatch for userName: ${userName}`);
+      throw new Error('Invalid credentials');
+    }
 
-    if (!user.isActive) throw new Error('User account is inactive');
+    if (!user.isActive) {
+      console.warn(`🚫 Inactive account login attempt: ${userName}`);
+      throw new Error('User account is inactive');
+    }
 
     const tokenData: ITokenData = {
       userId: user.userId,
-      role: user.role.toString(), // Ensure role is string if needed
+      role: user.role.toString(),
     };
 
     const token = createToken(tokenData).token;
 
-    // Remove password safely
+    console.log(`✅ Login successful for userId: ${user.userId}`);
+
     const userWithoutPassword = user.toObject();
     delete userWithoutPassword.password;
 
@@ -30,8 +40,14 @@ class AuthService {
   }
 
   async getCurrentUser(userId: string): Promise<IUserDocument> {
+    console.log(`👤 Fetching current user with userId: ${userId}`);
     const user = await User.findOne({ userId }).populate('role').exec() as IUserDocument | null;
-    if (!user) throw new Error('User not found');
+    if (!user) {
+      console.warn(`❌ User not found with userId: ${userId}`);
+      throw new Error('User not found');
+    }
+
+    console.log(`✅ Found user: ${user.name} (${user.userName})`);
     return user;
   }
 }
