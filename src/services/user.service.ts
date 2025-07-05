@@ -136,6 +136,14 @@ class UserService {
     );
     return isAvailable;
   }
+  async getRolePermissions(roleId: string): Promise<string[]> {
+    const role = await Role.findOne({ roleId });
+    if (!role) {
+      console.warn(`⚠️ Role not found for ID: ${roleId}`);
+      return [];
+    }
+    return role.permissions;
+  }
 }
 
 export default new UserService();
