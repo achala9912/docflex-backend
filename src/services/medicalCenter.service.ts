@@ -70,6 +70,13 @@ class MedicalCenterService {
       totalPages: Math.ceil(total / limit),
     };
   }
+  async getCenterById(centerId: string) {
+    const center = await MedicalCenter.findOne({
+      centerId,
+      isDeleted: false,
+    }).lean();
+    return center;
+  }
 
   async updateCenter(
     centerId: string,

@@ -29,7 +29,7 @@ class MedicalCenterController {
         tokenData: req.tokenData
           ? {
               role: req.tokenData.role,
-              centerId: req.tokenData.centerId?.toString(), 
+              centerId: req.tokenData.centerId?.toString(),
             }
           : { role: "SystemAdmin" },
       });
@@ -38,6 +38,22 @@ class MedicalCenterController {
     } catch (error) {
       console.error("❌ Failed to fetch medical centers:", error);
       res.status(500).json({ error: "Failed to retrieve centers" });
+    }
+  }
+  async getMedicalCenterById(req: Request, res: Response): Promise<void> {
+    try {
+      const centerId = req.params.centerId;
+      const center = await medicalCenterService.getCenterById(centerId);
+
+      if (!center) {
+        res.status(404).json({ error: "Medical center not found" });
+        return;
+      }
+
+      res.status(200).json(center);
+    } catch (error) {
+      console.error("❌ Failed to fetch medical center:", error);
+      res.status(500).json({ error: "Failed to retrieve medical center" });
     }
   }
 

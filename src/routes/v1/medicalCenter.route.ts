@@ -3,17 +3,17 @@ import medicalCenterController from "../../controllers/medicalCenter.controller"
 import authMiddleware from "../../middlewares/auth.middleware";
 import { checkPermission } from "../../middlewares/role.middleware";
 import validate from "../../middlewares/validate.middleware";
-import { MedicalCenterSchema, UpdateMedicalCenterSchema } from "../../schemas/medicalCenter.schema";
+import {
+  MedicalCenterSchema,
+  UpdateMedicalCenterSchema,
+} from "../../schemas/medicalCenter.schema";
 import { PERMISSIONS } from "../../constants/permissions.constants";
 
 const router = express.Router();
 
-
 router.use(authMiddleware);
 
-
 router.use(checkPermission(PERMISSIONS.CENTER_READ));
-
 
 router.post(
   "/",
@@ -24,14 +24,13 @@ router.post(
 
 router.get("/", medicalCenterController.getAllMedicalCenters);
 
-
+router.get("/:centerId", medicalCenterController.getMedicalCenterById);
 router.put(
   "/:centerId",
   checkPermission(PERMISSIONS.CENTER_UPDATE),
   validate(UpdateMedicalCenterSchema),
   medicalCenterController.updateMedicalCenter
 );
-
 
 router.delete(
   "/:centerId",
