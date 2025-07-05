@@ -2,15 +2,14 @@ import express from "express";
 import roleController from "../../controllers/role.controller";
 import { checkPermission } from "../../middlewares/role.middleware";
 import { PERMISSIONS } from "../../constants/permissions.constants";
-import { RoleSchema, UpdateRoleSchema } from "../../validations/role.schema";
+import { RoleSchema, UpdateRoleSchema } from "../../schemas/role.schema";
 import validate from "../../middlewares/validate.middleware";
 import authMiddleware from "../../middlewares/auth.middleware";
 
 const router = express.Router();
 
 router.use(authMiddleware);
-router.use(checkPermission(PERMISSIONS.ROLE_READ)); 
-
+router.use(checkPermission(PERMISSIONS.ROLE_READ));
 
 // Create Role
 router.post(

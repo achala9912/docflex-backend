@@ -11,6 +11,7 @@ const userSchema = new Schema<IUserDocument>(
     name: { type: String, required: true },
     userName: { type: String, required: true, unique: true },
     role: { type: mongoose.Schema.Types.ObjectId, ref: "Role", required: true },
+    centerId: { type: mongoose.Schema.Types.ObjectId, ref: "MedicalCenter" },
     gender: {
       type: String,
       enum: Object.values(GENDERS),
@@ -22,6 +23,7 @@ const userSchema = new Schema<IUserDocument>(
     contactNo: { type: String, required: true },
     password: { type: String, required: true, select: false },
     remarks: { type: String },
+    digitalSignature: { type: String },
     isActive: { type: Boolean, default: true },
     isNewUser: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false },
@@ -34,17 +36,16 @@ const userSchema = new Schema<IUserDocument>(
       },
     ],
   },
-  { 
+  {
     timestamps: true,
     toJSON: {
-      transform: function(doc, ret) {
-        delete ret.password; 
-      }
-    }
+      transform: function (doc, ret) {
+        delete ret.password;
+      },
+    },
   }
 );
 
-// Hash password before saving
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
 
@@ -57,7 +58,6 @@ userSchema.pre("save", async function (next) {
   }
 });
 
-// Method to compare passwords
 userSchema.methods.comparePassword = async function (
   candidatePassword: string
 ): Promise<boolean> {

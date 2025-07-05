@@ -1,10 +1,10 @@
-import "express";
+// src/types/express/index.d.ts
+import { ITokenData } from "../../interfaces/token.interface";
 
-declare module "express" {
-  interface Request {
-    tokenData?: {
-      userId: string;
-      role: string;
-    };
+declare global {
+  namespace Express {
+    interface Request {
+      tokenData?: ITokenData;
+    }
   }
 }

@@ -31,11 +31,13 @@ class AuthService {
 
     // ✅ Populate role
     await user.populate("role");
-    const role = user.role as unknown as { roleId: string };
+    const role = user.role as unknown as { roleId: string; roleName: string };
 
     const tokenData: ITokenData = {
       userId: user.userId,
       role: role.roleId,
+      ...(role.roleName !== "SystemAdmin" &&
+        user.centerId && { centerId: user.centerId.toString() }),
     };
 
     const token = createToken(tokenData).token;

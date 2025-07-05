@@ -3,13 +3,13 @@ import { GENDERS } from '../constants/gender.constants';
 import { ACTIONS } from '../constants/modification-history.constant';
 import { Permission } from '../constants/permissions.constants';
 
-// Base user interface (raw properties)
 export interface IUser {
   userId: string;
   title: string;
   name: string;
   userName: string;
-  role: Types.ObjectId; // Reference to Role document
+  role: Types.ObjectId;
+  centerId?: Types.ObjectId; // ✅ Now explicitly typed as ObjectId
   gender?: typeof GENDERS[keyof typeof GENDERS];
   slmcNo?: string;
   specialization?: string;
@@ -17,6 +17,7 @@ export interface IUser {
   contactNo: string;
   password: string;
   remarks?: string;
+  digitalSignature?: string;
   isActive?: boolean;
   isNewUser?: boolean;
   isDeleted?: boolean;
@@ -30,12 +31,12 @@ export interface IUser {
   updatedAt?: Date;
 }
 
-// Input type for creating/updating users (excludes auto-generated fields)
 export interface IUserInput {
   title: string;
   name: string;
   userName: string;
-  role: string | Types.ObjectId; // Accepts both string ID or ObjectId
+  role: string | Types.ObjectId;
+  centerId?: string | Types.ObjectId; // ✅ Accept both for input
   gender?: typeof GENDERS[keyof typeof GENDERS];
   slmcNo?: string;
   specialization?: string;
@@ -43,37 +44,41 @@ export interface IUserInput {
   contactNo: string;
   password: string;
   remarks?: string;
+  digitalSignature?: string; // 👈 Optional
 }
 
-// Mongoose document with methods
 export interface IUserDocument extends IUser, Document {
   comparePassword(candidatePassword: string): Promise<boolean>;
-  // Add other methods here if needed
 }
 
-// Type for populated user documents (e.g., with role details)
-export interface IUserPopulated extends Omit<IUserDocument, 'role'> {
+export interface IUserPopulated extends Omit<IUserDocument, 'role' | 'centerId'> {
   role: {
     _id: Types.ObjectId;
     roleId: string;
     roleName: string;
     permissions: Permission[];
   };
+  centerId?: {
+    _id: Types.ObjectId;
+    centerId: string;
+    centerName: string;
+  };
 }
 
-// Type for safe user output (excludes password and other sensitive fields)
 export interface IUserPublic {
   userId: string;
   title: string;
   name: string;
   userName: string;
   role: Types.ObjectId | IUserPopulated['role'];
+  centerId?: Types.ObjectId | IUserPopulated['centerId'];
   gender?: typeof GENDERS[keyof typeof GENDERS];
   slmcNo?: string;
   specialization?: string;
   email: string;
   contactNo: string;
   remarks?: string;
+  digitalSignature?: string;
   isActive?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
