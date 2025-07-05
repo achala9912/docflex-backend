@@ -1,9 +1,10 @@
-import { ITokenData } from '../../interfaces/token.interface';
+import "express";
 
-declare global {
-  namespace Express {
-    interface Request {
-      tokenData?: ITokenData;
-    }
+declare module "express" {
+  interface Request {
+    tokenData?: {
+      userId: string;
+      role: string;
+    };
   }
 }

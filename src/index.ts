@@ -5,7 +5,7 @@ import { connectDB } from "./config/db";
 import errorHandler from "./utils/errorHandler";
 
 // Import versioned routes
-import v1ItemRoutes from "./routes/v1/item.routes";
+
 import v1AuthRoutes from "./routes/v1/auth.route";
 import v1RoleRoutes from "./routes/v1/role.route";
 import v1UserRoutes from "./routes/v1/user.route";
@@ -24,7 +24,7 @@ const v1Router = express.Router();
 v1Router.use("/auth", v1AuthRoutes);
 v1Router.use("/roles", v1RoleRoutes);
 v1Router.use("/users", v1UserRoutes);
-v1Router.use("/items", v1ItemRoutes);
+
 
 // Mount versioned router
 app.use("/api/v1", v1Router);
@@ -33,7 +33,7 @@ app.use("/api/v1", v1Router);
 app.use("/api/auth", v1AuthRoutes);
 app.use("/api/roles", v1RoleRoutes);
 app.use("/api/users", v1UserRoutes);
-app.use("/api/items", v1ItemRoutes);
+
 
 // Error handler (should come after all routes)
 app.use(errorHandler);

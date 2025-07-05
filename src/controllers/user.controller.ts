@@ -2,20 +2,29 @@ import { Request, Response } from "express";
 import userService from "../services/user.service";
 
 class UserController {
+  // async getAllUsers(req: Request, res: Response): Promise<void> {
+  //   try {
+  //     console.log("📥 Received request to fetch all users");
+
+  //     const users = await userService.getAllUsers();
+
+  //     console.log(`✅ Fetched ${users.length} users`);
+  //     res.json(users);
+  //   } catch (error) {
+  //     const errorMessage =
+  //       error instanceof Error ? error.message : "Internal server error";
+
+  //     console.error("❌ Error fetching users:", errorMessage);
+  //     res.status(500).json({ error: errorMessage });
+  //   }
+  // }
   async getAllUsers(req: Request, res: Response): Promise<void> {
     try {
-      console.log("📥 Received request to fetch all users");
-
-      const users = await userService.getAllUsers();
-
-      console.log(`✅ Fetched ${users.length} users`);
-      res.json(users);
+      const users = await userService.getAllUsers(req.query);
+      res.status(200).json(users);
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Internal server error";
-
-      console.error("❌ Error fetching users:", errorMessage);
-      res.status(500).json({ error: errorMessage });
+      console.error("❌ Failed to fetch users:", error);
+      res.status(500).json({ error: "Failed to fetch users" });
     }
   }
 

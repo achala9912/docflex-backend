@@ -1,42 +1,9 @@
-
-// import express from "express";
-// import { withPermissions } from "../../middlewares/role.middleware";
-// import { PERMISSIONS } from "../../constants/permissions.constants";
-// import userController from "../../controllers/user.controller";
-// import validate from "../../middlewares/validate.middleware";
-// const router = express.Router();
-
-// // Get specific user
-// router.get(
-//   "/:userId",
-//   ...withPermissions(PERMISSIONS.USER_READ, async (req, res) => {
-//     await userController.getUserById(req, res);
-//   })
-// );
-
-// // Update user
-// router.put(
-//   "/:userId",
-//   ...withPermissions(PERMISSIONS.USER_UPDATE, async (req, res) => {
-//     await userController.updateUser(req, res);
-//   })
-// );
-
-// // Delete user
-// router.delete(
-//   "/:userId",
-//   ...withPermissions(PERMISSIONS.USER_DELETE, async (req, res) => {
-//     await userController.deleteUser(req, res);
-//   })
-// );
-
-// export default router;
 import express from "express";
 import userController from "../../controllers/user.controller";
 import { checkPermission } from "../../middlewares/role.middleware";
 import authMiddleware from "../../middlewares/auth.middleware";
 import { PERMISSIONS } from "../../constants/permissions.constants";
-import { UserSchema, UpdateUserSchema } from "../../schemas/user.schema";
+import { UserSchema, UpdateUserSchema } from "../../validations/user.schema";
 import validate from "../../middlewares/validate.middleware";
 
 const router = express.Router();

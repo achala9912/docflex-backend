@@ -1,51 +1,3 @@
-// import User from '../models/user.model';
-// import Role from '../models/role.model';
-// import { IUser, IUserInput } from '../interfaces/user.interface';
-
-// class UserService {
-//   async createUser(userData: IUserInput): Promise<IUser> {
-//     // Check if role exists
-//     const roleExists = await Role.findOne({ roleId: userData.role });
-//     if (!roleExists) throw new Error('Role not found');
-
-//     // Generate userId if not provided
-//     const lastUser = await User.findOne().sort({ userId: -1 }).limit(1);
-//     const lastId = lastUser ? parseInt(lastUser.userId.substring(1)) : 0;
-//     const userId = `E${(lastId + 1).toString().padStart(4, '0')}`;
-
-//     const user = new User({ ...userData, userId });
-//     return await user.save();
-//   }
-
-//   async getAllUsers(): Promise<IUser[]> {
-//     return await User.find().populate('role');
-//   }
-
-//   async getUserById(userId: string): Promise<IUser | null> {
-//     return await User.findOne({ userId }).populate('role');
-//   }
-
-//   async updateUser(userId: string, updateData: Partial<IUser>): Promise<IUser | null> {
-//     if (updateData.role) {
-//       const roleExists = await Role.findOne({ roleId: updateData.role });
-//       if (!roleExists) throw new Error('Role not found');
-//     }
-
-//     return await User.findOneAndUpdate({ userId }, updateData, { new: true }).populate('role');
-//   }
-
-//   async deleteUser(userId: string): Promise<void> {
-//     await User.findOneAndDelete({ userId });
-//   }
-
-//   async checkUsernameAvailability(userName: string): Promise<boolean> {
-//     const user = await User.findOne({ userName });
-//     return !user;
-//   }
-// }
-
-// export default new UserService();
-
 import User from "../models/user.model";
 import Role from "../models/role.model";
 import { IUser, IUserInput } from "../interfaces/user.interface";
@@ -71,9 +23,85 @@ class UserService {
     return saved;
   }
 
-  async getAllUsers(): Promise<IUser[]> {
-    console.log(`📥 Fetching all users`);
-    return await User.find().populate("role");
+  async getAllUsers(params?: any): Promise<{
+    data: IUser[];
+    total: number;
+    totalPages: number;
+    currentPage: number;
+  }> {
+    console.log(`📥 Fetching users with filters:`, params);
+
+    const {
+      page = 1,
+      limit = 10,
+      name,
+      email,
+      contactNo,
+      roleName,
+      profilePicURL,
+      userId,
+      userName,
+    } = params || {};
+
+    const skip = (page - 1) * limit;
+    const query: any = { isDeleted: false };
+
+    if (name) query.name = new RegExp(name, "i");
+    if (email) query.email = new RegExp(email, "i");
+    if (contactNo) query.contactNo = new RegExp(contactNo, "i");
+    if (userId) query.userId = new RegExp(userId, "i");
+    if (userName) query.userName = new RegExp(userName, "i");
+    if (profilePicURL) query.profilePicURL = new RegExp(profilePicURL, "i");
+
+    let users: IUser[] = [];
+    let total = 0;
+
+    if (roleName) {
+      // Filter by roleName
+      users = await User.find(query)
+        .select("-password")
+        .populate({
+          path: "role",
+          match: { roleName: new RegExp(roleName, "i") },
+        })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit))
+        .lean();
+
+      // Filter out users without a matching role
+      users = users.filter((user) => user.role);
+
+      // Total count for paginated role-matched users
+      const allUsersWithRole = await User.find(query)
+        .populate({
+          path: "role",
+          match: { roleName: new RegExp(roleName, "i") },
+        })
+        .lean();
+
+      total = allUsersWithRole.filter((user) => user.role).length;
+    } else {
+      // No roleName filter
+      users = await User.find(query)
+        .select("-password")
+        .populate("role")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit))
+        .lean();
+
+      total = await User.countDocuments(query);
+    }
+
+    const totalPages = Math.ceil(total / Number(limit));
+
+    return {
+      data: users,
+      total,
+      totalPages,
+      currentPage: Number(page),
+    };
   }
 
   async getUserById(userId: string): Promise<IUser | null> {

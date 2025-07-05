@@ -1,43 +1,16 @@
-// import express from 'express';
-// import roleController from '../../controllers/role.controller';
-// import { checkPermission } from '../../middlewares/role.middleware';
-// import { PERMISSIONS } from '../../constants/permissions.constants';
-
-// const router = express.Router();
-
-// // All role routes require ROLE_READ permission
-// router.use(checkPermission(PERMISSIONS.ROLE_READ));
-
-// router.post('/',
-//   checkPermission(PERMISSIONS.ROLE_CREATE),
-//   roleController.createRole
-// );
-
-// router.get('/', roleController.getAllRoles);
-// router.get('/:roleId', roleController.getRoleById);
-
-// router.put('/:roleId',
-//   checkPermission(PERMISSIONS.ROLE_UPDATE),
-//   roleController.updateRole
-// );
-
-// router.delete('/:roleId',
-//   checkPermission(PERMISSIONS.ROLE_DELETE),
-//   roleController.deleteRole
-// );
-
-// export default router;
-
 import express from "express";
 import roleController from "../../controllers/role.controller";
 import { checkPermission } from "../../middlewares/role.middleware";
 import { PERMISSIONS } from "../../constants/permissions.constants";
-import { RoleSchema, UpdateRoleSchema } from "../../schemas/role.schema";
+import { RoleSchema, UpdateRoleSchema } from "../../validations/role.schema";
 import validate from "../../middlewares/validate.middleware";
+import authMiddleware from "../../middlewares/auth.middleware";
 
 const router = express.Router();
 
-router.use(checkPermission(PERMISSIONS.ROLE_READ));
+router.use(authMiddleware);
+router.use(checkPermission(PERMISSIONS.ROLE_READ)); 
+
 
 // Create Role
 router.post(
@@ -57,7 +30,7 @@ router.get("/:roleId", roleController.getRoleById);
 router.put(
   "/:roleId",
   checkPermission(PERMISSIONS.ROLE_UPDATE),
-  validate(UpdateRoleSchema), 
+  validate(UpdateRoleSchema),
   roleController.updateRole
 );
 
