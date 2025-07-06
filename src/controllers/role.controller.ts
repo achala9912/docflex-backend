@@ -1,16 +1,7 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import roleService from "../services/role.service";
 
 class RoleController {
-  // Existing methods...
-  // async getAllRoles(req: Request, res: Response): Promise<void> {
-  //   try {
-  //     const roles = await roleService.getAllRoles();
-  //     res.json(roles);
-  //   } catch (error) {
-  //     this.handleError(res, error, 500, 'Failed to fetch roles');
-  //   }
-  // }
   async getAllRoles(req: Request, res: Response): Promise<void> {
     try {
       const roles = await roleService.getAllRoles(req.query);
@@ -34,12 +25,16 @@ class RoleController {
   }
 
   // Add the createRole method
-  async createRole(req: Request, res: Response): Promise<void> {
+  async createRole(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
       const newRole = await roleService.createRole(req.body);
       res.status(201).json(newRole);
     } catch (error) {
-      this.handleError(res, error, 400, "Failed to create role");
+      next(error); // Pass to global error handler
     }
   }
 

@@ -11,14 +11,9 @@ export const RoleSchema = z.object({
   permissions: z
     .array(z.enum(permissionValues))
     .nonempty({ message: "At least one permission is required" }),
-  roleId: z
-    .string()
-    .regex(/^R\d{3}$/, "Invalid role ID format")
-    .optional(),
 });
 
 export const UpdateRoleSchema = z.object({
-  roleId: z.string().optional(),
   roleName: z.string().optional(),
   permissions: z
     .array(z.string())

@@ -1,5 +1,3 @@
-
-
 import Role from "../models/role.model";
 import { DEFAULT_ROLES } from "../constants/permissions.constants";
 import { Permission } from "../constants/permissions.constants";
@@ -7,12 +5,20 @@ import { Permission } from "../constants/permissions.constants";
 class RoleService {
   async createRole(roleData: any): Promise<any> {
     console.log(`🎯 Creating new role: ${roleData.roleName}`);
-    const role = new Role(roleData);
+
+    // Count existing roles to generate roleId
+    const roleCount = await Role.countDocuments();
+    const roleId = `R${(roleCount + 1).toString().padStart(3, "0")}`;
+
+    const role = new Role({
+      ...roleData,
+      roleId,
+    });
+
     const saved = await role.save();
     console.log(`✅ Role created: ${saved.roleName} (ID: ${saved.roleId})`);
     return saved;
   }
-
 
   async getAllRoles(params?: any): Promise<{
     data: any[];
