@@ -1,5 +1,5 @@
 import express from "express";
-import medicalCenterController from "../../controllers/medicalCenter.controller";
+import * as medicalCenterController from "../../controllers/medicalCenter.controller";
 import authMiddleware from "../../middlewares/auth.middleware";
 import { checkPermission } from "../../middlewares/role.middleware";
 import validate from "../../middlewares/validate.middleware";
@@ -11,9 +11,8 @@ import { PERMISSIONS } from "../../constants/permissions.constants";
 
 const router = express.Router();
 
-router.use(authMiddleware);
 
-router.use(checkPermission(PERMISSIONS.CENTER_READ));
+router.use(authMiddleware);
 
 router.post(
   "/",
@@ -22,9 +21,18 @@ router.post(
   medicalCenterController.createMedicalCenter
 );
 
-router.get("/", medicalCenterController.getAllMedicalCenters);
+router.get(
+  "/",
+  checkPermission(PERMISSIONS.CENTER_READ),
+  medicalCenterController.getAllMedicalCenters
+);
 
-router.get("/:centerId", medicalCenterController.getMedicalCenterById);
+router.get(
+  "/:centerId",
+  checkPermission(PERMISSIONS.CENTER_READ),
+  medicalCenterController.getMedicalCenterById
+);
+
 router.put(
   "/:centerId",
   checkPermission(PERMISSIONS.CENTER_UPDATE),

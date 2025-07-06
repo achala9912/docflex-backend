@@ -1,5 +1,3 @@
-// interfaces/medicalCenter.interface.ts
-
 export interface IModification {
   action?: string | null;
   modifiedBy?: string | null;

@@ -1,5 +1,5 @@
 import express from "express";
-import userController from "../../controllers/user.controller";
+import * as userController from "../../controllers/user.controller";
 import { checkPermission } from "../../middlewares/role.middleware";
 import authMiddleware from "../../middlewares/auth.middleware";
 import { PERMISSIONS } from "../../constants/permissions.constants";
@@ -8,9 +8,10 @@ import validate from "../../middlewares/validate.middleware";
 
 const router = express.Router();
 
-router.use(authMiddleware);
-router.use(checkPermission(PERMISSIONS.USER_READ));
 
+router.use(authMiddleware);
+
+// User routes
 router.post(
   "/",
   checkPermission(PERMISSIONS.USER_CREATE),
@@ -18,8 +19,17 @@ router.post(
   userController.createUser
 );
 
-router.get("/", userController.getAllUsers);
-router.get("/:userId", userController.getUserById);
+router.get(
+  "/",
+  checkPermission(PERMISSIONS.USER_READ),
+  userController.getAllUsers
+);
+
+router.get(
+  "/:userId",
+  checkPermission(PERMISSIONS.USER_READ),
+  userController.getUserById
+);
 
 router.put(
   "/:userId",
