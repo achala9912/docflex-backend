@@ -65,7 +65,9 @@ class UserService {
 
   async getUserById(userId: string): Promise<IUser | null> {
     console.log(`🔍 Fetching user with ID: ${userId}`);
-    const user = await User.findOne({ userId }).populate("role");
+    const user = await User.findOne({ userId })
+      .populate("role")
+      .populate("centerId", "centerName");
 
     if (user) {
       console.log(`✅ Found user: ${user.name} (${user.userName})`);

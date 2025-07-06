@@ -5,7 +5,7 @@ class RoleController {
   async getAllRoles(req: Request, res: Response): Promise<void> {
     try {
       const roles = await roleService.getAllRoles(req.query);
-      res.status(200).json(roles); // ✅ Don't return this
+      res.status(200).json(roles);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch roles" });
     }
@@ -34,7 +34,7 @@ class RoleController {
       const newRole = await roleService.createRole(req.body);
       res.status(201).json(newRole);
     } catch (error) {
-      next(error); // Pass to global error handler
+      next(error);
     }
   }
 
