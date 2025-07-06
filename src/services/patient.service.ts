@@ -65,6 +65,9 @@ export const createPatient = async (
 
   return populatedPatient.toObject() as IPatient;
 };
+
+
+
 export const updatePatient = async (
   patientId: string,
   updateData: Partial<IPatient>,

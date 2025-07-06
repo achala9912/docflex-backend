@@ -26,6 +26,7 @@ export const PERMISSIONS = {
   CENTER_DELETE: "center:delete",
 
   PATTIENT_MANAGEMENT: "patient:management",
+  SESSION_MANAGEMENT: "session:management",
 
 } as const;
 

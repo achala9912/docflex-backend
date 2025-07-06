@@ -10,6 +10,8 @@ import v1RoleRoutes from "./routes/v1/role.route";
 import v1UserRoutes from "./routes/v1/user.route";
 import v1MedicalCenterRoutes from "./routes/v1/medicalCenter.route";
 import v1PatientsRoutes from "./routes/v1/patient.routes";
+import v1SessionsRoutes from "./routes/v1/session.routes";
+
 dotenv.config();
 
 const app = express();
@@ -26,6 +28,7 @@ v1Router.use("/roles", v1RoleRoutes);
 v1Router.use("/users", v1UserRoutes);
 v1Router.use("/medical-centers", v1MedicalCenterRoutes);
 v1Router.use("/patients", v1PatientsRoutes);
+v1Router.use("/sessions", v1SessionsRoutes);
 
 // ✅ Mount versioned router
 app.use("/api/v1", v1Router);
@@ -36,6 +39,7 @@ app.use("/api/roles", v1RoleRoutes);
 app.use("/api/users", v1UserRoutes);
 app.use("/api/medical-centers", v1MedicalCenterRoutes);
 app.use("/api/patients", v1PatientsRoutes);
+app.use("/api/sessions", v1SessionsRoutes);
 
 // ✅ Global Error Handler (keep at bottom)
 app.use(errorHandler);
