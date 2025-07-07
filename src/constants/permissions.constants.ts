@@ -27,6 +27,7 @@ export const PERMISSIONS = {
 
   PATTIENT_MANAGEMENT: "patient:management",
   SESSION_MANAGEMENT: "session:management",
+  GENERICNAME_MANAGEMENT:"generic:management"
 
 } as const;
 
