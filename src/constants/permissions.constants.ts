@@ -1,5 +1,3 @@
-
-
 export const PERMISSIONS = {
   // User permissions
   USER_CREATE: "user:create",
@@ -27,8 +25,8 @@ export const PERMISSIONS = {
 
   PATTIENT_MANAGEMENT: "patient:management",
   SESSION_MANAGEMENT: "session:management",
-  GENERICNAME_MANAGEMENT:"generic:management"
-
+  GENERICNAME_MANAGEMENT: "generic:management",
+  APPOINTMENT_MANAGEMENT: "appointment:management",
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
