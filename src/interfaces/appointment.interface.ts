@@ -1,5 +1,6 @@
 import { Document, Types } from "mongoose";
 import { IMedicalCenter } from "./medicalCenter.interface";
+import { IPatient } from "./patient.interface";
 
 export interface IModification {
   action?: string | null;
@@ -11,8 +12,8 @@ export interface IAppointment extends Document {
   appointmentId: string;
   tokenNo: number;
   sessionId: string;
-  status:string;
-  patientId: string;
+  status: string;
+  patientId: Types.ObjectId | IPatient;
   centerId: Types.ObjectId | IMedicalCenter;
   isPatientvisited: boolean;
   modificationHistory: IModification[];

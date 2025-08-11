@@ -92,6 +92,7 @@ export const getAppointmentById = async (
   return appointment
     .findOne({ appointmentId })
     .populate("centerId", "centerId centerName")
+    .populate("patientId", "patientId patientName")
     .populate({
       path: "sessionId",
       select: "sessionId sessionName startTime endTime isSessionActive",
@@ -148,6 +149,7 @@ export const getAllAppointments = async (params: {
   const data = await appointment
     .find(query)
     .populate("centerId", "centerId centerName")
+    .populate("patientId", "patientId patientName")
     .populate("sessionId", "sessionName startTime endTime")
     .sort({ date: -1, tokenNo: 1 })
     .skip((page - 1) * limit)
@@ -183,7 +185,7 @@ export const cancelAppointment = async (
   const updatedAppointment = await appointment.findOneAndUpdate(
     { appointmentId },
     {
-      $set: { status: "cancel" }, 
+      $set: { status: "cancel" },
       $push: {
         modificationHistory: {
           action: ACTIONS.CANCEL,
