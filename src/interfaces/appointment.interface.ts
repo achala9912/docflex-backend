@@ -11,6 +11,7 @@ export interface IAppointment extends Document {
   appointmentId: string;
   tokenNo: number;
   sessionId: string;
+  status:string;
   patientId: string;
   centerId: Types.ObjectId | IMedicalCenter;
   isPatientvisited: boolean;

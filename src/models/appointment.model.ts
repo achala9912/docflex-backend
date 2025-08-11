@@ -7,6 +7,7 @@ const AppointmentSchema = new Schema<IAppointment>(
     date: { type: Date, required: true },
     appointmentId: { type: String, required: true, unique: true },
     tokenNo: { type: Number, required: true },
+    status: { type: String, required: true },
     sessionId: { type: String, required: true, unique: true },
     patientId: { type: String, required: true, unique: true },
     centerId: {

@@ -62,7 +62,8 @@ export const createAppointment = async (
     ...appointmentData,
     appointmentId,
     tokenNo,
-    date: now, // creation timestamp
+    date: now,
+    status: "completed",
     modificationHistory: [
       {
         action: ACTIONS.CREATE,
@@ -172,7 +173,9 @@ export const cancelAppointment = async (
   }
 
   // Check if the appointment session is still active
-  const currentSession = await session.findById(appointmentToCancel.sessionId);
+  const currentSession = await session.findOne({
+    sessionId: appointmentToCancel.sessionId,
+  });
   if (!currentSession?.isSessionActive) {
     throw new Error("Cannot cancel appointment for inactive session");
   }
@@ -180,7 +183,7 @@ export const cancelAppointment = async (
   const updatedAppointment = await appointment.findOneAndUpdate(
     { appointmentId },
     {
-      $set: { isCancelled: true },
+      $set: { status: "cancel" }, 
       $push: {
         modificationHistory: {
           action: ACTIONS.CANCEL,
