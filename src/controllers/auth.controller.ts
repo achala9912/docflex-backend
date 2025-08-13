@@ -23,7 +23,6 @@ class AuthController {
         success: true,
         user,
         token,
-        permissions
       });
     } catch (error: any) {
       return res.status(400).json({
