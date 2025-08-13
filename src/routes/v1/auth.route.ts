@@ -11,5 +11,17 @@ router.post("/login", (req, res, next) => {
 router.get("/me", authMiddleware, (req, res, next) => {
   authController.getCurrentUser(req, res).catch(next);
 });
+router.post("/change-password", authMiddleware, (req, res, next) => {
+  authController.changePassword(req, res).catch(next);
+});
 
+// Forgot password: send OTP (public)
+router.post("/forgot-password/send-otp", (req, res, next) => {
+  authController.sendForgotPasswordOtp(req, res).catch(next);
+});
+
+// Forgot password: verify OTP & set new password (public)
+router.post("/forgot-password/verify-otp", (req, res, next) => {
+  authController.verifyOtpAndResetPassword(req, res).catch(next);
+});
 export default router;

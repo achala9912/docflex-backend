@@ -35,12 +35,17 @@ const userSchema = new Schema<IUserDocument>(
         date: { type: Date, default: Date.now },
       },
     ],
+    // Add for OTP
+    resetOtp: { type: String },
+    resetOtpExpiry: { type: Date },
   },
   {
     timestamps: true,
     toJSON: {
       transform: function (doc, ret) {
         delete ret.password;
+        delete ret.resetOtp;
+        delete ret.resetOtpExpiry;
       },
     },
   }

@@ -3,6 +3,8 @@ import { IUserDocument } from "../interfaces/user.interface";
 import { createToken } from "../utils/jwt";
 import { ITokenData } from "../interfaces/token.interface";
 
+import nodemailer from "nodemailer";
+
 class AuthService {
   async login(
     userName: string,
@@ -62,6 +64,74 @@ class AuthService {
 
     console.log(`✅ Found user: ${user.name} (${user.userName})`);
     return user;
+  }
+
+  async changePassword(
+    userName: string,
+    oldPassword: string,
+    newPassword: string
+  ) {
+    const user = await User.findOne({ userName }).select("+password");
+    if (!user) throw new Error("User not found.");
+
+    const isMatch = await user.comparePassword(oldPassword);
+    if (!isMatch) throw new Error("Old password is incorrect.");
+
+    user.password = newPassword;
+    await user.save();
+    return true;
+  }
+
+  async sendForgotPasswordOtp(userName: string) {
+    const user = await User.findOne({ userName });
+    if (!user) throw new Error("User not found.");
+
+    // Generate 4 digit OTP
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+
+    // Save OTP and expiry (5 min) to user
+    user.resetOtp = otp;
+    user.resetOtpExpiry = new Date(Date.now() + 5 * 60 * 1000);
+    await user.save();
+
+    // Send OTP to user email
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD,
+      },
+    });
+    await transporter.sendMail({
+      from: "Docflex Pro",
+      to: user.email,
+      subject: "Your OTP Code",
+      text: `Your OTP code is ${otp}`,
+    });
+
+    return true;
+  }
+
+  async verifyOtpAndResetPassword(
+    userName: string,
+    otp: string,
+    newPassword: string
+  ) {
+    const user = await User.findOne({ userName });
+    if (!user) throw new Error("User not found.");
+    if (
+      !user.resetOtp ||
+      !user.resetOtpExpiry ||
+      user.resetOtp !== otp ||
+      user.resetOtpExpiry < new Date()
+    ) {
+      throw new Error("Invalid or expired OTP.");
+    }
+    user.password = newPassword;
+    user.resetOtp = undefined;
+    user.resetOtpExpiry = undefined;
+    await user.save();
+    return true;
   }
 }
 
