@@ -1,0 +1,80 @@
+export const passwordResetTemplate = (otp: string, userName: string) => `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Reset OTP</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #0087a9ff;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+        .content {
+            padding: 20px;
+            background-color: #f9fafb;
+            border-radius: 0 0 8px 8px;
+            border: 1px solid #e5e7eb;
+        }
+        .otp-container {
+            background-color: #ffffff;
+            border: 1px dashed #4f46e5;
+            padding: 15px;
+            text-align: center;
+            margin: 20px 0;
+            font-size: 24px;
+            font-weight: bold;
+            color: #4f46e5;
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #6b7280;
+            text-align: center;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #4f46e5;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>DocFlex Pro</h2>
+    </div>
+    <div class="content">
+        <h3>Hello ${userName},</h3>
+        <p>We received a request to reset your password. Please use the following OTP (One-Time Password) to proceed:</p>
+        
+        <div class="otp-container">
+            ${otp}
+        </div>
+        
+        <p>This code will expire in 5 minutes. If you didn't request this password reset, please ignore this email or contact support if you have concerns.</p>
+        
+        <p>For security reasons, do not share this OTP with anyone.</p>
+        
+        <div class="footer">
+            <p>© ${new Date().getFullYear()} DocFlex Pro. All rights reserved.</p>
+            <p>If you're having trouble with the OTP, please contact our support team.</p>
+        </div>
+    </div>
+</body>
+</html>
+`;

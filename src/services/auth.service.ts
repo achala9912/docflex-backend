@@ -2,7 +2,7 @@ import User from "../models/user.model";
 import { IUserDocument } from "../interfaces/user.interface";
 import { createToken } from "../utils/jwt";
 import { ITokenData } from "../interfaces/token.interface";
-
+import { passwordResetTemplate } from "../utils/otpEmailTemplates";
 import nodemailer from "nodemailer";
 
 class AuthService {
@@ -102,11 +102,18 @@ class AuthService {
         pass: process.env.EMAIL_PASSWORD,
       },
     });
+    // await transporter.sendMail({
+    //   from: "Docflex Pro",
+    //   to: user.email,
+    //   subject: "Your OTP Code",
+    //   text: `Your OTP code is ${otp}`,
+    // });
     await transporter.sendMail({
-      from: "Docflex Pro",
+      from: '"DocFlex Pro" <no-reply@docflexpro.com>',
       to: user.email,
-      subject: "Your OTP Code",
-      text: `Your OTP code is ${otp}`,
+      subject: "Your Password Reset OTP",
+      text: `Your OTP code is ${otp}. This code will expire in 5 minutes.`,
+      html: passwordResetTemplate(otp, user.name || user.userName),
     });
 
     return true;
