@@ -53,7 +53,7 @@ export const getAllUsers = async (
 }> => {
   const { page = 1, limit = 10, name, email, userName, roleId } = params;
   const skip = (page - 1) * limit;
-  // Show all users who are not deleted or missing isDeleted field
+
   const query: any = {
     $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
   };
@@ -67,9 +67,8 @@ export const getAllUsers = async (
     if (role) query.role = role._id;
   }
 
-  // Only restrict by centerId for non-SystemAdmin
-  const userRole = (tokenData.role || "").toLowerCase();
-  if (userRole !== "systemadmin") {
+  const isSystemAdmin = tokenData.role === "R001"; // SystemAdmin roleId
+  if (!isSystemAdmin) {
     query.centerId = tokenData.centerId;
   }
 
