@@ -92,7 +92,6 @@ export const getAllUsers = async (
   };
 };
 
-
 // Get User By ID (with centerName flattened)
 export const getUserById = async (userId: string): Promise<IUser | null> => {
   console.log(`🔍 Fetching user with ID: ${userId}`);
@@ -208,6 +207,24 @@ export const getRolePermissions = async (roleId: string): Promise<string[]> => {
   return role.permissions || [];
 };
 
+// export const getUsersForSuggestion = async (params: any) => {
+//   try {
+//     const { search } = params;
+//     const query: any = { isDeleted: false };
+
+//     if (search) {
+//       query.$or = [
+//         { name: new RegExp(search, "i") },
+//         { userName: new RegExp(search, "i") },
+//       ];
+//     }
+
+//     return await User.find(query, "name email contactNo employeeId _id");
+//   } catch (error: any) {
+//     console.error("❌ Error in getUsersForSuggestion:", error.message);
+//     throw new Error("Failed to fetch users for suggestion");
+//   }
+// };
 export const getUsersForSuggestion = async (params: any) => {
   try {
     const { search } = params;
@@ -218,6 +235,15 @@ export const getUsersForSuggestion = async (params: any) => {
         { name: new RegExp(search, "i") },
         { userName: new RegExp(search, "i") },
       ];
+    }
+
+    // Exclude system admins by role
+    // First, get the Role _id for SystemAdmin
+    const systemAdminRole = await Role.findOne({
+      roleName: /systemadmin/i,
+    }).lean();
+    if (systemAdminRole) {
+      query.role = { $ne: systemAdminRole._id };
     }
 
     return await User.find(query, "name email contactNo employeeId _id");
