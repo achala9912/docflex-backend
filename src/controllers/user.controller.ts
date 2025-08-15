@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import * as userService from "../services/user.service";
 
-
 export const getAllUsers = async (
   req: Request,
   res: Response
@@ -23,7 +22,6 @@ export const getAllUsers = async (
   }
 };
 
-
 export const createUser = async (
   req: Request,
   res: Response
@@ -40,7 +38,6 @@ export const createUser = async (
     res.status(400).json({ error: errorMessage });
   }
 };
-
 
 export const getUserById = async (
   req: Request,
@@ -62,7 +59,6 @@ export const getUserById = async (
     res.status(500).json({ error: errorMessage });
   }
 };
-
 
 export const updateUser = async (
   req: Request,
@@ -87,18 +83,31 @@ export const updateUser = async (
   }
 };
 
-
 export const deleteUser = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
-    await userService.deleteUser(req.params.userId);
-    res.status(204).send();
+    const deletedUser = await userService.deleteUser(req.params.userId);
+    if (!deletedUser) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    res.status(200).json(deletedUser);
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Internal server error";
     console.error("❌ Error deleting user:", errorMessage);
     res.status(500).json({ error: errorMessage });
+  }
+};
+
+export const getAllUsersSuggestion = async (req: Request, res: Response) => {
+  try {
+    const users = await userService.getUsersForSuggestion(req.query);
+    res.status(200).json(users);
+  } catch (error: any) {
+    console.error("Error retrieving users:", error.message);
+    res.status(500).json({ error: "Server error" });
   }
 };

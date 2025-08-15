@@ -8,7 +8,6 @@ import validate from "../../middlewares/validate.middleware";
 
 const router = express.Router();
 
-
 router.use(authMiddleware);
 
 // User routes
@@ -24,6 +23,7 @@ router.get(
   checkPermission(PERMISSIONS.USER_READ),
   userController.getAllUsers
 );
+router.get("/constant", userController.getAllUsersSuggestion);
 
 router.get(
   "/:userId",

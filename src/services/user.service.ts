@@ -29,11 +29,12 @@ export const createUser = async (userData: IUserInput): Promise<IUser> => {
 
   const savedUser = await user.save();
 
-  console.log(`✅ User created: ${savedUser.name} (userId: ${savedUser.userId})`);
+  console.log(
+    `✅ User created: ${savedUser.name} (userId: ${savedUser.userId})`
+  );
   return savedUser;
 };
 
-// Get All Users
 export const getAllUsers = async (
   params: {
     page?: number;
@@ -41,6 +42,7 @@ export const getAllUsers = async (
     name?: string;
     email?: string;
     userName?: string;
+    roleId?: string;
   },
   tokenData: ITokenData
 ): Promise<{
@@ -49,15 +51,25 @@ export const getAllUsers = async (
   totalPages: number;
   currentPage: number;
 }> => {
-  const { page = 1, limit = 10, name, email, userName } = params;
+  const { page = 1, limit = 10, name, email, userName, roleId } = params;
   const skip = (page - 1) * limit;
-  const query: any = { isDeleted: false };
+  // Show all users who are not deleted or missing isDeleted field
+  const query: any = {
+    $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
+  };
 
   if (name) query.name = new RegExp(name, "i");
   if (email) query.email = new RegExp(email, "i");
   if (userName) query.userName = new RegExp(userName, "i");
 
-  if (tokenData.role !== "SystemAdmin") {
+  if (roleId) {
+    const role = await Role.findOne({ roleId }).lean();
+    if (role) query.role = role._id;
+  }
+
+  // Only restrict by centerId for non-SystemAdmin
+  const userRole = (tokenData.role || "").toLowerCase();
+  if (userRole !== "systemadmin") {
     query.centerId = tokenData.centerId;
   }
 
@@ -80,11 +92,12 @@ export const getAllUsers = async (
   };
 };
 
+
 // Get User By ID (with centerName flattened)
 export const getUserById = async (userId: string): Promise<IUser | null> => {
   console.log(`🔍 Fetching user with ID: ${userId}`);
-  
-  if (!mongoose.isValidObjectId(userId) && !userId.startsWith('E')) {
+
+  if (!mongoose.isValidObjectId(userId) && !userId.startsWith("E")) {
     console.warn(`⚠️ Invalid user ID format: ${userId}`);
     return null;
   }
@@ -123,11 +136,9 @@ export const updateUser = async (
     updateData.centerId = new mongoose.Types.ObjectId(updateData.centerId);
   }
 
-  const updatedUser = await User.findOneAndUpdate(
-    { userId },
-    updateData,
-    { new: true }
-  )
+  const updatedUser = await User.findOneAndUpdate({ userId }, updateData, {
+    new: true,
+  })
     .populate("role")
     .populate("centerId", "centerName")
     .lean();
@@ -144,7 +155,7 @@ export const updateUser = async (
 // Delete User (soft delete)
 export const deleteUser = async (userId: string): Promise<IUser | null> => {
   console.log(`🗑️ Deleting user with ID: ${userId}`);
-  
+
   // Consider soft delete instead of hard delete
   const deletedUser = await User.findOneAndUpdate(
     { userId },
@@ -166,24 +177,24 @@ export const checkUsernameAvailability = async (
   userName: string
 ): Promise<{ available: boolean; message?: string }> => {
   console.log(`🔍 Checking availability for username: ${userName}`);
-  
+
   if (!userName || userName.length < 3) {
     return {
       available: false,
-      message: "Username must be at least 3 characters long"
+      message: "Username must be at least 3 characters long",
     };
   }
 
   const user = await User.findOne({ userName });
   const isAvailable = !user;
-  
+
   console.log(
     `ℹ️ Username "${userName}" is ${isAvailable ? "available" : "taken"}`
   );
-  
+
   return {
     available: isAvailable,
-    message: isAvailable ? undefined : "Username is already taken"
+    message: isAvailable ? undefined : "Username is already taken",
   };
 };
 
@@ -195,4 +206,23 @@ export const getRolePermissions = async (roleId: string): Promise<string[]> => {
     return [];
   }
   return role.permissions || [];
+};
+
+export const getUsersForSuggestion = async (params: any) => {
+  try {
+    const { search } = params;
+    const query: any = { isDeleted: false };
+
+    if (search) {
+      query.$or = [
+        { name: new RegExp(search, "i") },
+        { userName: new RegExp(search, "i") },
+      ];
+    }
+
+    return await User.find(query, "name email contactNo employeeId _id");
+  } catch (error: any) {
+    console.error("❌ Error in getUsersForSuggestion:", error.message);
+    throw new Error("Failed to fetch users for suggestion");
+  }
 };
