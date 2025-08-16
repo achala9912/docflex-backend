@@ -1,11 +1,16 @@
 import MedicalCenter from "../models/medicalCenter.model";
 import { IMedicalCenter } from "../interfaces/medicalCenter.interface";
 import { ACTIONS } from "../constants/modification-history.constant";
+import User from "../models/user.model";
 
 // Helper function to generate center ID
 const generateCenterId = async (): Promise<string> => {
-  const lastCenter = await MedicalCenter.findOne().sort({ centerId: -1 }).limit(1);
-  const lastIdNum = lastCenter ? parseInt(lastCenter.centerId.replace("MC", "")) : 0;
+  const lastCenter = await MedicalCenter.findOne()
+    .sort({ centerId: -1 })
+    .limit(1);
+  const lastIdNum = lastCenter
+    ? parseInt(lastCenter.centerId.replace("MC", ""))
+    : 0;
   return `MC${String(lastIdNum + 1).padStart(4, "0")}`;
 };
 
@@ -15,16 +20,18 @@ export const createCenter = async (
   createdBy: string
 ): Promise<IMedicalCenter> => {
   const centerId = await generateCenterId();
-  
+
   const center = new MedicalCenter({
     ...data,
     centerId,
     isDeleted: false,
-    modificationHistory: [{
-      action: ACTIONS.CREATE,
-      modifiedBy: createdBy,
-      date: new Date()
-    }]
+    modificationHistory: [
+      {
+        action: ACTIONS.CREATE,
+        modifiedBy: createdBy,
+        date: new Date(),
+      },
+    ],
   });
 
   const savedCenter = await center.save();
@@ -65,7 +72,7 @@ export const getAllCenters = async (params: {
       .skip(skip)
       .limit(limit)
       .lean(),
-    MedicalCenter.countDocuments(query)
+    MedicalCenter.countDocuments(query),
   ]);
 
   return {
@@ -77,7 +84,9 @@ export const getAllCenters = async (params: {
 };
 
 // Get single center by ID
-export const getCenterById = async (centerId: string): Promise<IMedicalCenter | null> => {
+export const getCenterById = async (
+  centerId: string
+): Promise<IMedicalCenter | null> => {
   return MedicalCenter.findOne({ centerId, isDeleted: false }).lean();
 };
 
@@ -94,11 +103,14 @@ export const updateCenter = async (
   const original = center.toObject();
 
   // Track changes
-  Object.keys(data).forEach(key => {
-    if (data[key as keyof IMedicalCenter] !== original[key as keyof IMedicalCenter]) {
+  Object.keys(data).forEach((key) => {
+    if (
+      data[key as keyof IMedicalCenter] !==
+      original[key as keyof IMedicalCenter]
+    ) {
       changes[key] = {
         from: original[key as keyof IMedicalCenter],
-        to: data[key as keyof IMedicalCenter]
+        to: data[key as keyof IMedicalCenter],
       };
       center.set(key, data[key as keyof IMedicalCenter]);
     }
@@ -110,7 +122,7 @@ export const updateCenter = async (
       action: ACTIONS.UPDATE,
       modifiedBy,
       date: new Date(),
-      changes
+      changes,
     });
   }
 
@@ -119,24 +131,84 @@ export const updateCenter = async (
 };
 
 // Soft delete medical center
+// export const deleteCenter = async (
+//   centerId: string,
+//   deletedBy: string
+// ): Promise<IMedicalCenter | null> => {
+//   const center = await MedicalCenter.findOneAndUpdate(
+//     { centerId },
+//     {
+//       isDeleted: true,
+//       $push: {
+//         modificationHistory: {
+//           action: ACTIONS.DELETE,
+//           modifiedBy: deletedBy,
+//           date: new Date(),
+//         },
+//       },
+//     },
+//     { new: true }
+//   ).lean();
+
+//   return center;
+// };
 export const deleteCenter = async (
   centerId: string,
   deletedBy: string
-): Promise<IMedicalCenter | null> => {
+): Promise<{
+  success: boolean;
+  message: string;
+  data?: IMedicalCenter | null;
+}> => {
+  // Check if users exist under this center
+  const userCount = await User.countDocuments({ centerId, isDeleted: false });
+  if (userCount > 0) {
+    return {
+      success: false,
+      message:
+        "Cannot delete this medical center. Registered users are linked to it.",
+    };
+  }
+
   const center = await MedicalCenter.findOneAndUpdate(
-    { centerId },
+    { centerId, isDeleted: false },
     {
       isDeleted: true,
       $push: {
         modificationHistory: {
           action: ACTIONS.DELETE,
           modifiedBy: deletedBy,
-          date: new Date()
-        }
-      }
+          date: new Date(),
+        },
+      },
     },
     { new: true }
   ).lean();
 
-  return center;
+  return {
+    success: true,
+    message: "Medical center deleted successfully",
+    data: center,
+  };
+};
+
+export const getCentersForSuggestion = async (params: { search?: string }) => {
+  try {
+    const { search } = params;
+    const query: any = { isDeleted: false };
+
+    if (search) {
+      const searchRegex = new RegExp(search, "i");
+      query.$or = [{ centerName: searchRegex }, { centerId: searchRegex }];
+    }
+
+    const centers = await MedicalCenter.find(query)
+      .select("centerId centerName")
+      .lean();
+
+    return centers;
+  } catch (error) {
+    console.error("Error fetching centers for suggestion:", error);
+    throw error;
+  }
 };

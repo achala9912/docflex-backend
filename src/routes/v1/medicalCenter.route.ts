@@ -11,7 +11,6 @@ import { PERMISSIONS } from "../../constants/permissions.constants";
 
 const router = express.Router();
 
-
 router.use(authMiddleware);
 
 router.post(
@@ -25,6 +24,11 @@ router.get(
   "/",
   checkPermission(PERMISSIONS.CENTER_READ),
   medicalCenterController.getAllMedicalCenters
+);
+router.get(
+  "/constants",
+  checkPermission(PERMISSIONS.CENTER_READ),
+  medicalCenterController.getCentersForSuggestionController
 );
 
 router.get(
