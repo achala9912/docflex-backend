@@ -6,7 +6,7 @@ import PERMISSIONS from "../constants/permissions.constants";
 const roleSchema = new Schema<IRoleDocument>(
   {
     roleId: { type: String, required: true, unique: true },
-    roleName: { type: String, required: true, unique: true },
+    roleName: { type: String, required: true, unique: true},
     permissions: [
       {
         type: String,

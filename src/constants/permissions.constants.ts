@@ -11,21 +11,16 @@ export const PERMISSIONS = {
   ROLE_UPDATE: "role:update",
   ROLE_DELETE: "role:delete",
 
-  // Appointment permissions
-  APPOINTMENT_CREATE: "appointment:create",
-  APPOINTMENT_READ: "appointment:read",
-  APPOINTMENT_UPDATE: "appointment:update",
-  APPOINTMENT_DELETE: "appointment:delete",
-
   // Medical Center permissions
   CENTER_CREATE: "center:create",
   CENTER_READ: "center:read",
   CENTER_UPDATE: "center:update",
   CENTER_DELETE: "center:delete",
 
-  PATTIENT_MANAGEMENT: "patient:management",
+  PATIENT_MANAGEMENT: "patient:management",
   SESSION_MANAGEMENT: "session:management",
   GENERICNAME_MANAGEMENT: "generic:management",
+  // Appointment permissions
   APPOINTMENT_MANAGEMENT: "appointment:management",
 } as const;
 

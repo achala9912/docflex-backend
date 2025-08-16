@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import authService from "../services/auth.service";
-import roleService from "../services/role.service";
+import * as roleService from "../services/role.service";
 import { Permission } from "../constants/permissions.constants";
 
 interface AuthResponse {
