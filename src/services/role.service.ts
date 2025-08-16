@@ -1,132 +1,8 @@
-// import Role from "../models/role.model";
-// import { DEFAULT_ROLES } from "../constants/permissions.constants";
-// import { Permission } from "../constants/permissions.constants";
-
-// class RoleService {
-//   async createRole(roleData: any): Promise<any> {
-//     console.log(`🎯 Creating new role: ${roleData.roleName}`);
-
-//     // Count existing roles to generate roleId
-//     const roleCount = await Role.countDocuments();
-//     const roleId = `R${(roleCount + 1).toString().padStart(3, "0")}`;
-
-//     const role = new Role({
-//       ...roleData,
-//       roleId,
-//     });
-
-//     const saved = await role.save();
-//     console.log(`✅ Role created: ${saved.roleName} (ID: ${saved.roleId})`);
-//     return saved;
-//   }
-
-//   async getAllRoles(params?: any): Promise<{
-//     data: any[];
-//     total: number;
-//     totalPages: number;
-//     currentPage: number;
-//   }> {
-//     console.log(`📥 Fetching roles with filters:`, params);
-
-//     const { page = 1, limit = 10, roleName, roleId } = params || {};
-
-//     const skip = (page - 1) * limit;
-//     const query: any = {};
-
-//     if (roleName) query.roleName = new RegExp(roleName, "i");
-//     if (roleId) query.roleId = new RegExp(roleId, "i");
-
-//     const [data, total] = await Promise.all([
-//       Role.find(query)
-//         .sort({ createdAt: -1 })
-//         .skip(skip)
-//         .limit(Number(limit))
-//         .lean(),
-//       Role.countDocuments(query),
-//     ]);
-
-//     const totalPages = Math.ceil(total / Number(limit));
-
-//     return {
-//       data,
-//       total,
-//       totalPages,
-//       currentPage: Number(page),
-//     };
-//   }
-
-//   async getRoleById(roleId: string): Promise<any> {
-//     console.log(`🔍 Looking for role with ID: ${roleId}`);
-//     return Role.findOne({ roleId });
-//   }
-
-//   async updateRole(roleId: string, updateData: any): Promise<any> {
-//     console.log(`✏️ Updating role ${roleId} with data:`, updateData);
-//     const updated = await Role.findOneAndUpdate({ roleId }, updateData, {
-//       new: true,
-//       runValidators: true,
-//     });
-
-//     if (updated) {
-//       console.log(`✅ Role ${roleId} updated successfully`);
-//     } else {
-//       console.warn(`⚠️ Role ${roleId} not found for update`);
-//     }
-
-//     return updated;
-//   }
-
-//   async deleteRole(roleId: string): Promise<void> {
-//     console.log(`🗑️ Deleting role with ID: ${roleId}`);
-//     const deleted = await Role.findOneAndDelete({ roleId });
-
-//     if (deleted) {
-//       console.log(`✅ Role ${roleId} deleted successfully`);
-//     } else {
-//       console.warn(`⚠️ Role ${roleId} not found for deletion`);
-//     }
-//   }
-
-//   async initializeDefaultRoles(): Promise<void> {
-//     console.log(`🚀 Initializing default roles`);
-//     for (const defaultRole of DEFAULT_ROLES) {
-//       const existingRole = await Role.findOne({
-//         roleName: defaultRole.roleName,
-//       });
-//       if (!existingRole) {
-//         const roleCount = await Role.countDocuments();
-//         const roleId = `R${(roleCount + 1).toString().padStart(3, "0")}`;
-
-//         await Role.create({
-//           roleName: defaultRole.roleName,
-//           permissions: defaultRole.permissions,
-//           roleId,
-//         });
-
-//         console.log(
-//           `✅ Created default role: ${defaultRole.roleName} (ID: ${roleId})`
-//         );
-//       } else {
-//         console.log(`ℹ️ Role already exists: ${defaultRole.roleName}`);
-//       }
-//     }
-//   }
-
-//   async getRolePermissions(roleId: string): Promise<Permission[]> {
-//     console.log(`🔐 Fetching permissions for role ID: ${roleId}`);
-//     const role = await Role.findOne({ roleId });
-//     const permissions = role?.permissions?.map((p) => p as Permission) || [];
-//     console.log(`✅ Permissions for ${roleId}:`, permissions);
-//     return permissions;
-//   }
-
-// }
-
-// export default new RoleService();
-
 import Role from "../models/role.model";
+import User from "../models/user.model";
 import PERMISSIONS, { DEFAULT_ROLES } from "../constants/permissions.constants";
 import { Permission } from "../constants/permissions.constants";
+import { ACTIONS } from "../constants/modification-history.constant";
 
 interface PermissionItem {
   label: string;
@@ -137,15 +13,38 @@ interface PermissionsJson {
   [key: string]: PermissionItem[];
 }
 
-export const createRole = async (roleData: any): Promise<any> => {
+export const createRole = async (
+  roleData: any,
+  createdBy: string
+): Promise<any> => {
   console.log(`🎯 Creating new role: ${roleData.roleName}`);
+
+  // Check for existing role
+  const existingRole = await Role.findOne({
+    roleName: roleData.roleName,
+    isDeleted: false,
+  });
+
+  if (existingRole) {
+    throw new Error(`Role with name "${roleData.roleName}" already exists`);
+  }
 
   const roleCount = await Role.countDocuments();
   const roleId = `R${(roleCount + 1).toString().padStart(3, "0")}`;
 
-  const role = new Role({ ...roleData, roleId });
-  const saved = await role.save();
+  const role = new Role({
+    ...roleData,
+    roleId,
+    modificationHistory: [
+      {
+        action: ACTIONS.CREATE,
+        modifiedBy: createdBy,
+        date: new Date(),
+      },
+    ],
+  });
 
+  const saved = await role.save();
   console.log(`✅ Role created: ${saved.roleName} (ID: ${saved.roleId})`);
   return saved;
 };
@@ -160,55 +59,120 @@ export const getAllRoles = async (
 }> => {
   console.log(`📥 Fetching roles with filters:`, params);
 
-  const { page = 1, limit = 10, roleName, roleId } = params || {};
+  const {
+    page = 1,
+    limit = 10,
+    roleName,
+    roleId,
+    includeDeleted = false,
+  } = params || {};
   const skip = (page - 1) * limit;
   const query: any = {};
 
   if (roleName) query.roleName = new RegExp(roleName, "i");
   if (roleId) query.roleId = new RegExp(roleId, "i");
+  if (!includeDeleted) query.isDeleted = false;
 
   const [data, total] = await Promise.all([
     Role.find(query).sort({ createdAt: -1 }).skip(skip).limit(Number(limit)),
-
     Role.countDocuments(query),
   ]);
 
   const totalPages = Math.ceil(total / Number(limit));
-
   return { data, total, totalPages, currentPage: Number(page) };
 };
 
 export const getRoleById = async (roleId: string): Promise<any> => {
   console.log(`🔍 Looking for role with ID: ${roleId}`);
-  return Role.findOne({ roleId });
+  return Role.findOne({ roleId, isDeleted: false });
 };
 
 export const updateRole = async (
   roleId: string,
-  updateData: any
+  updateData: any,
+  modifiedBy: string
 ): Promise<any> => {
   console.log(`✏️ Updating role ${roleId} with data:`, updateData);
 
-  const updated = await Role.findOneAndUpdate({ roleId }, updateData, {
-    new: true,
-    runValidators: true,
-  });
+  if (updateData.roleName) {
+    const existingRole = await Role.findOne({
+      roleName: updateData.roleName,
+      roleId: { $ne: roleId },
+      isDeleted: false,
+    });
+    if (existingRole) {
+      throw new Error(`Role with name "${updateData.roleName}" already exists`);
+    }
+  }
 
-  if (updated) console.log(`✅ Role ${roleId} updated successfully`);
-  else console.warn(`⚠️ Role ${roleId} not found for update`);
+  const updated = await Role.findOneAndUpdate(
+    { roleId, isDeleted: false },
+    {
+      ...updateData,
+      $push: {
+        modificationHistory: {
+          action: ACTIONS.UPDATE,
+          modifiedBy: modifiedBy,
+          date: new Date(),
+        },
+      },
+    },
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
 
+  if (!updated) {
+    throw new Error(`Role with ID ${roleId} not found or is deleted`);
+  }
+
+  console.log(`✅ Role ${roleId} updated successfully`);
   return updated;
 };
 
-export const deleteRole = async (roleId: string): Promise<void> => {
-  console.log(`🗑️ Deleting role with ID: ${roleId}`);
-  const deleted = await Role.findOneAndDelete({ roleId });
+export const deleteRole = async (
+  roleId: string,
+  deletedBy: string
+): Promise<void> => {
+  console.log(`🗑️ Attempting to delete role with ID: ${roleId}`);
 
-  if (deleted) console.log(`✅ Role ${roleId} deleted successfully`);
-  else console.warn(`⚠️ Role ${roleId} not found for deletion`);
+  const usersWithRole = await User.countDocuments({ roleId });
+  if (usersWithRole > 0) {
+    throw new Error(
+      `Cannot delete role. There are ${usersWithRole} user(s) assigned to this role.`
+    );
+  }
+
+  const deleted = await Role.findOneAndUpdate(
+    { roleId, isDeleted: false },
+    {
+      isDeleted: true,
+      $push: {
+        modificationHistory: {
+          action: ACTIONS.DELETE,
+          modifiedBy: deletedBy,
+          date: new Date(),
+        },
+      },
+    },
+    { new: true }
+  );
+
+  if (!deleted) {
+    throw new Error(`Role with ID ${roleId} not found or is already deleted`);
+  }
+
+  console.log(`✅ Role ${roleId} marked as deleted successfully`);
 };
 
-export const initializeDefaultRoles = async (): Promise<void> => {
+export const getUsersByRole = async (roleId: string): Promise<any[]> => {
+  return User.find({ roleId }).select("-password");
+};
+
+export const initializeDefaultRoles = async (
+  createdBy: string
+): Promise<void> => {
   console.log(`🚀 Initializing default roles`);
   for (const defaultRole of DEFAULT_ROLES) {
     const existingRole = await Role.findOne({ roleName: defaultRole.roleName });
@@ -220,6 +184,13 @@ export const initializeDefaultRoles = async (): Promise<void> => {
         roleName: defaultRole.roleName,
         permissions: defaultRole.permissions,
         roleId,
+        modificationHistory: [
+          {
+            action: ACTIONS.CREATE,
+            modifiedBy: createdBy,
+            date: new Date(),
+          },
+        ],
       });
 
       console.log(
@@ -234,11 +205,11 @@ export const initializeDefaultRoles = async (): Promise<void> => {
 export const getRolePermissions = async (
   roleId: string
 ): Promise<Permission[]> => {
-  console.log(`🔐 Fetching permissions for role ID: ${roleId}`);
-  const role = await Role.findOne({ roleId });
-  const permissions = role?.permissions?.map((p) => p as Permission) || [];
-  console.log(`✅ Permissions for ${roleId}:`, permissions);
-  return permissions;
+  const role = await Role.findOne({ roleId, isDeleted: false });
+  if (!role) {
+    throw new Error(`Role with ID ${roleId} not found or is deleted`);
+  }
+  return role.permissions.map((p) => p as Permission);
 };
 
 export const getPermissionsJson = (): PermissionsJson => {
@@ -250,7 +221,6 @@ export const getPermissionsJson = (): PermissionsJson => {
 
     const moduleRaw = parts[0];
     const actionRaw = parts.slice(1).join("_");
-
     const module = moduleRaw.toLowerCase();
 
     let label = "";

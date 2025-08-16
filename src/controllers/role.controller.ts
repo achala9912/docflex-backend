@@ -117,7 +117,8 @@ export const createRole = async (
   next: NextFunction
 ) => {
   try {
-    const newRole = await roleService.createRole(req.body);
+    const createdBy = req.tokenData?.userId || "system";
+    const newRole = await roleService.createRole(req.body, createdBy);
     res.status(201).json(newRole);
   } catch (error) {
     next(error);
@@ -126,9 +127,11 @@ export const createRole = async (
 
 export const updateRole = async (req: Request, res: Response) => {
   try {
+    const updatedBy = req.tokenData?.userId || "system";
     const updatedRole = await roleService.updateRole(
       req.params.roleId,
-      req.body
+      req.body,
+      updatedBy
     );
     if (!updatedRole) {
       res.status(404).json({ error: "Role not found" });
@@ -149,7 +152,8 @@ export const deleteRole = async (req: Request, res: Response) => {
       res.status(404).json({ error: "Role not found" });
       return;
     }
-    await roleService.deleteRole(req.params.roleId);
+    const deletedBy = req.tokenData?.userId || "system";
+    await roleService.deleteRole(req.params.roleId, deletedBy);
     res.status(204).send();
   } catch (error) {
     res.status(500).json({
