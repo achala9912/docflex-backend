@@ -268,3 +268,24 @@ export const getPermissionsJson = (): PermissionsJson => {
 
   return mapping;
 };
+
+export const getRoleSuggestion = async (params: { search?: string }) => {
+  try {
+    const { search } = params;
+    const query: any = { isDeleted: false };
+
+    if (search) {
+      const searchRegex = new RegExp(search, "i");
+      query.$or = [{ roleName: searchRegex }, { roleId: searchRegex }];
+    }
+
+    const roles = await Role.find(query)
+      .select("roleId roleName")
+      .lean();
+
+    return roles;
+  } catch (error) {
+    console.error("Error fetching roles for suggestion:", error);
+    throw error;
+  }
+};

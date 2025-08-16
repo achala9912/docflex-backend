@@ -181,3 +181,38 @@ export const getPermissionsConstant = (req: Request, res: Response): void => {
     });
   }
 };
+
+export const getRoleSuggestionController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { search } = req.query;
+
+    const roles = await roleService.getRoleSuggestion({
+      search: search as string,
+    });
+
+    // Format response to match your pattern (only _id, roleId, roleName)
+    const formatted = roles.map((r) => ({
+      _id: r._id,
+      roleId: r.roleId,
+      roleName: r.roleName,
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: formatted,
+    });
+  } catch (error) {
+    console.error("Error in getRoleSuggestionController:", error);
+
+    res.status(500).json({
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch role suggestions",
+    });
+  }
+};

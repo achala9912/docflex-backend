@@ -15,32 +15,32 @@ router.use(authMiddleware);
 
 router.post(
   "/",
-  checkPermission(PERMISSIONS.PATTIENT_MANAGEMENT),
+  checkPermission(PERMISSIONS.PATIENT_MANAGEMENT),
   validate(PatientSchema),
   patientController.createPatient
 );
 
 router.put(
   "/:patientId",
-  checkPermission(PERMISSIONS.PATTIENT_MANAGEMENT),
+  checkPermission(PERMISSIONS.PATIENT_MANAGEMENT),
   validate(UpdatePatientSchema),
   patientController.updatePatient
 );
 
 router.delete(
   "/:patientId",
-  checkPermission(PERMISSIONS.PATTIENT_MANAGEMENT),
+  checkPermission(PERMISSIONS.PATIENT_MANAGEMENT),
   patientController.deletePatient
 );
 
 router.get(
   "/",
-  checkPermission(PERMISSIONS.PATTIENT_MANAGEMENT),
+  checkPermission(PERMISSIONS.PATIENT_MANAGEMENT),
   patientController.getAllPatients
 );
 router.get(
   "/:patientId",
-  checkPermission(PERMISSIONS.PATTIENT_MANAGEMENT),
+  checkPermission(PERMISSIONS.PATIENT_MANAGEMENT),
   patientController.getPatient
 );
 export default router;
