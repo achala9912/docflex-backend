@@ -182,7 +182,7 @@ export const getPermissionsConstant = (req: Request, res: Response): void => {
   }
 };
 
-export const getRoleSuggestionController = async (
+export const getRoleSuggestion = async (
   req: Request,
   res: Response
 ): Promise<void> => {

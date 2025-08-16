@@ -73,7 +73,7 @@ router.get("/", roleController.getAllRoles);
 router.get("/permission-constant", roleController.getPermissionsConstant);
 
 // Get role suggestions 
-router.get("/constant", roleController.getRoleSuggestionController);
+router.get("/constant", roleController.getRoleSuggestion);
 
 // Get Single Role 
 router.get("/:roleId", roleController.getRoleById);

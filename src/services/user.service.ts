@@ -3,6 +3,7 @@ import Role from "../models/role.model";
 import mongoose, { Types } from "mongoose";
 import { IUser, IUserInput } from "../interfaces/user.interface";
 import { ITokenData } from "../interfaces/token.interface";
+import { DEFAULT_ROLES } from "../constants/permissions.constants";
 
 // Create User
 export const createUser = async (userData: IUserInput): Promise<IUser> => {
@@ -206,6 +207,7 @@ export const getRolePermissions = async (roleId: string): Promise<string[]> => {
   return role.permissions || [];
 };
 
+
 // export const getUsersForSuggestion = async (params: any) => {
 //   try {
 //     const { search } = params;
@@ -218,31 +220,41 @@ export const getRolePermissions = async (roleId: string): Promise<string[]> => {
 //       ];
 //     }
 
+//     const systemAdminRole = await Role.findOne({
+//       roleName: /systemadmin/i,
+//     }).lean();
+//     if (systemAdminRole) {
+//       query.role = { $ne: systemAdminRole._id };
+//     }
+
 //     return await User.find(query, "name email contactNo employeeId _id");
 //   } catch (error: any) {
 //     console.error("❌ Error in getUsersForSuggestion:", error.message);
 //     throw new Error("Failed to fetch users for suggestion");
 //   }
 // };
+
 export const getUsersForSuggestion = async (params: any) => {
   try {
     const { search } = params;
     const query: any = { isDeleted: false };
 
-    if (search) {
-      query.$or = [
-        { name: new RegExp(search, "i") },
-        { userName: new RegExp(search, "i") },
-      ];
+
+    const defaultRoles = DEFAULT_ROLES.map(
+      (r) => new RegExp(`^${r.roleName}$`, "i")
+    );
+    const rolesToExclude = await Role.find({ roleName: { $in: defaultRoles } })
+      .select("_id")
+      .lean();
+
+    if (rolesToExclude.length > 0) {
+      query.role = { $nin: rolesToExclude.map((r) => r._id) };
     }
 
-    // Exclude system admins by role
-    // First, get the Role _id for SystemAdmin
-    const systemAdminRole = await Role.findOne({
-      roleName: /systemadmin/i,
-    }).lean();
-    if (systemAdminRole) {
-      query.role = { $ne: systemAdminRole._id };
+
+    if (search) {
+      const searchRegex = new RegExp(search, "i");
+      query.$or = [{ name: searchRegex }, { userName: searchRegex }];
     }
 
     return await User.find(query, "name email contactNo employeeId _id");
