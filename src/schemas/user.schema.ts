@@ -5,7 +5,7 @@ export const UserSchema = z.object({
   name: z.string(),
   userName: z.string(),
   role: z.string(),
-  centerId: z.string().optional(), // ObjectId as string
+  centerId: z.string().optional(),
   gender: z.enum(["Male", "Female", "Other"]).optional(),
   slmcNo: z.string().optional(),
   specialization: z.string().optional(),
@@ -14,6 +14,7 @@ export const UserSchema = z.object({
   password: z.string().optional(),
   remarks: z.string().optional(),
   digitalSignature: z.string().optional(),
+  profilePicture: z.string().optional(),
 });
 
 export const UpdateUserSchema = UserSchema.partial();

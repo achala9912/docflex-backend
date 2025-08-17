@@ -9,11 +9,84 @@ import crypto from "crypto";
 import nodemailer from "nodemailer";
 import { temporaryPasswordTemplate } from "../utils/otpEmailTemplates";
 
+// export const createUser = async (userData: IUserInput): Promise<IUser> => {
+//   console.log(`🧾 Creating user: ${userData.userName}`);
+
+//   const roleExists = await Role.findOne({ roleId: userData.role });
+//   if (!roleExists) throw new Error("Role not found");
+
+//   const lastUser = await User.findOne().sort({ userId: -1 }).limit(1);
+//   const lastId = lastUser ? parseInt(lastUser.userId.substring(1)) : 0;
+//   const userId = `E${(lastId + 1).toString().padStart(4, "0")}`;
+
+//   // Generate temporary password
+//   const tempPassword = crypto.randomBytes(4).toString("hex"); // 8 chars
+//   console.log(`Temporary password for ${userData.userName}: ${tempPassword}`);
+
+//   const user = new User({
+//     ...userData,
+//     role: roleExists._id,
+//     centerId: userData.centerId
+//       ? new mongoose.Types.ObjectId(userData.centerId)
+//       : undefined,
+//     userId,
+//     password: tempPassword,
+//   });
+
+//   const savedUser = await user.save();
+
+//   // Send temporary password via email
+//   const transporter = nodemailer.createTransport({
+//     service: "gmail",
+//     auth: {
+//       user: process.env.EMAIL_USER,
+//       pass: process.env.EMAIL_PASSWORD,
+//     },
+//   });
+
+//   const emailContent = temporaryPasswordTemplate(
+//     tempPassword,
+//     user.name,
+//     user.userName
+//   );
+
+//   await transporter.sendMail({
+//     from: '"DocFlex Pro" <no-reply@docflexpro.com>',
+//     to: user.email,
+//     subject: "Your Temporary Password",
+//     text: emailContent.text,
+//     html: emailContent.html,
+//   });
+
+//   console.log(`✅ User created and temp password sent: ${savedUser.userId}`);
+//   return savedUser;
+// };
+
 export const createUser = async (userData: IUserInput): Promise<IUser> => {
   console.log(`🧾 Creating user: ${userData.userName}`);
 
   const roleExists = await Role.findOne({ roleId: userData.role });
   if (!roleExists) throw new Error("Role not found");
+
+  // 🔍 Check if userName OR email already exists in the same center
+  const existingUser = await User.findOne({
+    centerId: userData.centerId,
+    isDeleted: { $ne: true },
+    $or: [{ userName: userData.userName }, { email: userData.email }],
+  });
+
+  if (existingUser) {
+    if (existingUser.userName === userData.userName) {
+      throw new Error(
+        `The username "${userData.userName}" already exists in this medical center.`
+      );
+    }
+    if (existingUser.email === userData.email) {
+      throw new Error(
+        `The email "${userData.email}" is already registered in this medical center.`
+      );
+    }
+  }
 
   const lastUser = await User.findOne().sort({ userId: -1 }).limit(1);
   const lastId = lastUser ? parseInt(lastUser.userId.substring(1)) : 0;
@@ -54,7 +127,7 @@ export const createUser = async (userData: IUserInput): Promise<IUser> => {
     from: '"DocFlex Pro" <no-reply@docflexpro.com>',
     to: user.email,
     subject: "Your Temporary Password",
-    text: emailContent.text, 
+    text: emailContent.text,
     html: emailContent.html,
   });
 
@@ -94,7 +167,7 @@ export const getAllUsers = async (
     if (role) query.role = role._id;
   }
 
-  const isSystemAdmin = tokenData.role === "R001"; // SystemAdmin roleId
+  const isSystemAdmin = tokenData.role === "R001"; 
   if (!isSystemAdmin) {
     query.centerId = tokenData.centerId;
   }
