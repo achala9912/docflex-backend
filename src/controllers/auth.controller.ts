@@ -12,27 +12,46 @@ interface AuthResponse {
 }
 
 class AuthController {
-  async login(req: Request, res: Response): Promise<Response<AuthResponse>> {
+  // loginUser = async (req: Request, res: Response) => {
+  //   const { userName, password } = req.body;
+  //   try {
+  //     const result = await authService.login(userName, password);
+  //     if (result.mustResetPassword) {
+  //       return res.status(403).json({
+  //         message: "You must reset your password on first login",
+  //         mustResetPassword: true,
+  //         userName: result.user.userName,
+  //       });
+  //     }
+  //     return res.json({ user: result.user, token: result.token });
+  //   } catch (err: any) {
+  //     return res.status(400).json({ error: err.message });
+  //   }
+  // };
+  loginUser = async (req: Request, res: Response) => {
+    const { userName, password } = req.body;
     try {
-      const { userName, password } = req.body;
-      const { user, token } = await authService.login(userName, password);
-
-      const permissions = await roleService.getRolePermissions(
-        user.role.toString()
-      );
+      const result = await authService.login(userName, password);
 
       return res.json({
-        success: true,
-        user,
-        token,
+        user: result.user,
+        token: result.token,
+        mustResetPassword: result.mustResetPassword || false,
       });
-    } catch (error: any) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message });
     }
-  }
+  };
+
+  resetFirstLoginPassword = async (req: Request, res: Response) => {
+    const { userName, newPassword } = req.body;
+    try {
+      await authService.resetFirstLoginPassword(userName, newPassword);
+      return res.json({ message: "Password reset successfully" });
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message });
+    }
+  };
 
   async getCurrentUser(
     req: Request,

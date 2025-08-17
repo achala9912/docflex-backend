@@ -4,20 +4,24 @@ import mongoose, { Types } from "mongoose";
 import { IUser, IUserInput } from "../interfaces/user.interface";
 import { ITokenData } from "../interfaces/token.interface";
 import { DEFAULT_ROLES } from "../constants/permissions.constants";
+import crypto from "crypto";
 
-// Create User
+import nodemailer from "nodemailer";
+import { temporaryPasswordTemplate } from "../utils/otpEmailTemplates";
+
 export const createUser = async (userData: IUserInput): Promise<IUser> => {
   console.log(`🧾 Creating user: ${userData.userName}`);
 
   const roleExists = await Role.findOne({ roleId: userData.role });
-  if (!roleExists) {
-    console.warn(`❌ Role not found for roleId: ${userData.role}`);
-    throw new Error("Role not found");
-  }
+  if (!roleExists) throw new Error("Role not found");
 
   const lastUser = await User.findOne().sort({ userId: -1 }).limit(1);
   const lastId = lastUser ? parseInt(lastUser.userId.substring(1)) : 0;
   const userId = `E${(lastId + 1).toString().padStart(4, "0")}`;
+
+  // Generate temporary password
+  const tempPassword = crypto.randomBytes(4).toString("hex"); // 8 chars
+  console.log(`Temporary password for ${userData.userName}: ${tempPassword}`);
 
   const user = new User({
     ...userData,
@@ -26,13 +30,35 @@ export const createUser = async (userData: IUserInput): Promise<IUser> => {
       ? new mongoose.Types.ObjectId(userData.centerId)
       : undefined,
     userId,
+    password: tempPassword,
   });
 
   const savedUser = await user.save();
 
-  console.log(
-    `✅ User created: ${savedUser.name} (userId: ${savedUser.userId})`
+  // Send temporary password via email
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+  });
+
+  const emailContent = temporaryPasswordTemplate(
+    tempPassword,
+    user.name,
+    user.userName
   );
+
+  await transporter.sendMail({
+    from: '"DocFlex Pro" <no-reply@docflexpro.com>',
+    to: user.email,
+    subject: "Your Temporary Password",
+    text: emailContent.text, 
+    html: emailContent.html,
+  });
+
+  console.log(`✅ User created and temp password sent: ${savedUser.userId}`);
   return savedUser;
 };
 
@@ -207,7 +233,6 @@ export const getRolePermissions = async (roleId: string): Promise<string[]> => {
   return role.permissions || [];
 };
 
-
 // export const getUsersForSuggestion = async (params: any) => {
 //   try {
 //     const { search } = params;
@@ -239,7 +264,6 @@ export const getUsersForSuggestion = async (params: any) => {
     const { search } = params;
     const query: any = { isDeleted: false };
 
-
     const defaultRoles = DEFAULT_ROLES.map(
       (r) => new RegExp(`^${r.roleName}$`, "i")
     );
@@ -250,7 +274,6 @@ export const getUsersForSuggestion = async (params: any) => {
     if (rolesToExclude.length > 0) {
       query.role = { $nin: rolesToExclude.map((r) => r._id) };
     }
-
 
     if (search) {
       const searchRegex = new RegExp(search, "i");

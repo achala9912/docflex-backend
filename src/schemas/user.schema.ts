@@ -11,7 +11,7 @@ export const UserSchema = z.object({
   specialization: z.string().optional(),
   email: z.string().email(),
   contactNo: z.string(),
-  password: z.string(),
+  password: z.string().optional(),
   remarks: z.string().optional(),
   digitalSignature: z.string().optional(),
 });

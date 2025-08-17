@@ -78,3 +78,60 @@ export const passwordResetTemplate = (otp: string, userName: string) => `
 </body>
 </html>
 `;
+
+export const temporaryPasswordTemplate = (
+  tempPassword: string,
+  name: string,
+  userName: string
+) => {
+  return {
+    text: `Hello ${name},
+
+Your account has been created.
+
+User Name: ${userName}
+Temporary Password: ${tempPassword}
+
+Please log in and reset your password after first login.
+
+Do not share these credentials with anyone. For assistance, contact support.
+`,
+    html: `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Temporary Password</title>
+<style>
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+  .header { background-color: #0087a9ff; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+  .content { padding: 20px; background-color: #f9fafb; border-radius: 0 0 8px 8px; border: 1px solid #e5e7eb; }
+  .credentials { background-color: #ffffff; border: 1px dashed #4f46e5; padding: 15px; margin: 20px 0; font-size: 18px; color: #4f46e5; }
+  .footer { margin-top: 20px; font-size: 12px; color: #6b7280; text-align: center; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h2>DocFlex Pro</h2>
+  </div>
+  <div class="content">
+    <h3>Hello ${name},</h3>
+    <p>Your account has been created. Please use the following credentials to log in and reset your password immediately:</p>
+    
+    <div class="credentials">
+      <p><strong>User Name:</strong> ${userName}</p>
+      <p><strong>Temporary Password:</strong> ${tempPassword}</p>
+    </div>
+
+    <p>Do not share these credentials with anyone. For assistance, contact support.</p>
+
+    <div class="footer">
+      <p>© ${new Date().getFullYear()} DocFlex Pro. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
+`,
+  };
+};
