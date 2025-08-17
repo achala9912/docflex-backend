@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import * as userService from "../services/user.service";
 import { ACTIONS } from "../constants/modification-history.constant";
-import nodemailer from "nodemailer";
 
 export const getAllUsers = async (
   req: Request,
@@ -45,16 +44,15 @@ export const createUser = async (
   res: Response
 ): Promise<void> => {
   try {
-    console.log("📥 Received request to create user:", req.body);
-
-    // Use logged-in userId or fallback
     const createdBy = req.tokenData?.userId || "System";
 
     // Generate temporary password
     const tempPassword = Math.random().toString(36).slice(-8);
+
     const newUserData = {
       ...req.body,
       password: tempPassword,
+      profilePicture: req.body.profilePicture || "",
       modificationHistory: [
         {
           action: ACTIONS.CREATE,
@@ -64,35 +62,25 @@ export const createUser = async (
       ],
     };
 
-    // Create user
     const newUser = await userService.createUser(newUserData);
-
-    // Send temporary password via email
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD,
-      },
-    });
-
-    await transporter.sendMail({
-      from: '"DocFlex Pro" <no-reply@docflexpro.com>',
-      to: newUser.email,
-      subject: "Your Temporary Password",
-      text: `Hello ${newUser.name},\n\nYour account has been created.\nTemporary Password: ${tempPassword}\nPlease reset your password after first login.`,
-    });
-
-    console.log(`✅ User created successfully: ${newUser.userId}`);
 
     res.status(201).json({
       success: true,
       message: "User created successfully. Temporary password sent via email.",
       user: newUser,
     });
-  } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : "Internal server error";
+  } catch (error: any) {
+    let errorMessage = "Internal server error";
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyValue)[0];
+      const value = error.keyValue[field];
+      errorMessage = `${
+        field.charAt(0).toUpperCase() + field.slice(1)
+      } '${value}' already exists.`;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+
     console.error("❌ Error creating user:", errorMessage);
     res.status(400).json({ success: false, message: errorMessage });
   }

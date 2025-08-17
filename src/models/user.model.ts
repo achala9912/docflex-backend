@@ -24,6 +24,7 @@ const userSchema = new Schema<IUserDocument>(
     password: { type: String, required: true, select: false },
     remarks: { type: String },
     digitalSignature: { type: String },
+    profilePicture: { type: String },
     isActive: { type: Boolean, default: true },
     isNewUser: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false },

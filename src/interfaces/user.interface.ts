@@ -9,7 +9,7 @@ export interface IUser {
   name: string;
   userName: string;
   role: Types.ObjectId;
-  centerId?: Types.ObjectId; // ✅ Now explicitly typed as ObjectId
+  centerId?: Types.ObjectId;
   gender?: (typeof GENDERS)[keyof typeof GENDERS];
   slmcNo?: string;
   specialization?: string;
@@ -18,6 +18,7 @@ export interface IUser {
   password: string;
   remarks?: string;
   digitalSignature?: string;
+  profilePicture?: string;
   isActive?: boolean;
   isNewUser?: boolean;
   isDeleted?: boolean;
@@ -39,7 +40,7 @@ export interface IUserInput {
   name: string;
   userName: string;
   role: string | Types.ObjectId;
-  centerId?: string | Types.ObjectId; // ✅ Accept both for input
+  centerId?: string | Types.ObjectId;
   gender?: (typeof GENDERS)[keyof typeof GENDERS];
   slmcNo?: string;
   specialization?: string;
@@ -47,7 +48,8 @@ export interface IUserInput {
   contactNo: string;
   password: string;
   remarks?: string;
-  digitalSignature?: string; // 👈 Optional
+  digitalSignature?: string;
+  profilePicture?: string;
 }
 
 export interface IUserDocument extends IUser, Document {
@@ -83,6 +85,7 @@ export interface IUserPublic {
   contactNo: string;
   remarks?: string;
   digitalSignature?: string;
+  profilePicture?: string;
   isActive?: boolean;
   createdAt?: Date;
   updatedAt?: Date;

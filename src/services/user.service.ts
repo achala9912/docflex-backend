@@ -5,62 +5,9 @@ import { IUser, IUserInput } from "../interfaces/user.interface";
 import { ITokenData } from "../interfaces/token.interface";
 import { DEFAULT_ROLES } from "../constants/permissions.constants";
 import crypto from "crypto";
-
 import nodemailer from "nodemailer";
 import { temporaryPasswordTemplate } from "../utils/otpEmailTemplates";
 
-// export const createUser = async (userData: IUserInput): Promise<IUser> => {
-//   console.log(`🧾 Creating user: ${userData.userName}`);
-
-//   const roleExists = await Role.findOne({ roleId: userData.role });
-//   if (!roleExists) throw new Error("Role not found");
-
-//   const lastUser = await User.findOne().sort({ userId: -1 }).limit(1);
-//   const lastId = lastUser ? parseInt(lastUser.userId.substring(1)) : 0;
-//   const userId = `E${(lastId + 1).toString().padStart(4, "0")}`;
-
-//   // Generate temporary password
-//   const tempPassword = crypto.randomBytes(4).toString("hex"); // 8 chars
-//   console.log(`Temporary password for ${userData.userName}: ${tempPassword}`);
-
-//   const user = new User({
-//     ...userData,
-//     role: roleExists._id,
-//     centerId: userData.centerId
-//       ? new mongoose.Types.ObjectId(userData.centerId)
-//       : undefined,
-//     userId,
-//     password: tempPassword,
-//   });
-
-//   const savedUser = await user.save();
-
-//   // Send temporary password via email
-//   const transporter = nodemailer.createTransport({
-//     service: "gmail",
-//     auth: {
-//       user: process.env.EMAIL_USER,
-//       pass: process.env.EMAIL_PASSWORD,
-//     },
-//   });
-
-//   const emailContent = temporaryPasswordTemplate(
-//     tempPassword,
-//     user.name,
-//     user.userName
-//   );
-
-//   await transporter.sendMail({
-//     from: '"DocFlex Pro" <no-reply@docflexpro.com>',
-//     to: user.email,
-//     subject: "Your Temporary Password",
-//     text: emailContent.text,
-//     html: emailContent.html,
-//   });
-
-//   console.log(`✅ User created and temp password sent: ${savedUser.userId}`);
-//   return savedUser;
-// };
 
 export const createUser = async (userData: IUserInput): Promise<IUser> => {
   console.log(`🧾 Creating user: ${userData.userName}`);
@@ -92,8 +39,8 @@ export const createUser = async (userData: IUserInput): Promise<IUser> => {
   const lastId = lastUser ? parseInt(lastUser.userId.substring(1)) : 0;
   const userId = `E${(lastId + 1).toString().padStart(4, "0")}`;
 
-  // Generate temporary password
-  const tempPassword = crypto.randomBytes(4).toString("hex"); // 8 chars
+
+  const tempPassword = crypto.randomBytes(4).toString("hex"); 
   console.log(`Temporary password for ${userData.userName}: ${tempPassword}`);
 
   const user = new User({
@@ -306,31 +253,6 @@ export const getRolePermissions = async (roleId: string): Promise<string[]> => {
   return role.permissions || [];
 };
 
-// export const getUsersForSuggestion = async (params: any) => {
-//   try {
-//     const { search } = params;
-//     const query: any = { isDeleted: false };
-
-//     if (search) {
-//       query.$or = [
-//         { name: new RegExp(search, "i") },
-//         { userName: new RegExp(search, "i") },
-//       ];
-//     }
-
-//     const systemAdminRole = await Role.findOne({
-//       roleName: /systemadmin/i,
-//     }).lean();
-//     if (systemAdminRole) {
-//       query.role = { $ne: systemAdminRole._id };
-//     }
-
-//     return await User.find(query, "name email contactNo employeeId _id");
-//   } catch (error: any) {
-//     console.error("❌ Error in getUsersForSuggestion:", error.message);
-//     throw new Error("Failed to fetch users for suggestion");
-//   }
-// };
 
 export const getUsersForSuggestion = async (params: any) => {
   try {

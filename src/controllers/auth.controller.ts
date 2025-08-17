@@ -12,22 +12,7 @@ interface AuthResponse {
 }
 
 class AuthController {
-  // loginUser = async (req: Request, res: Response) => {
-  //   const { userName, password } = req.body;
-  //   try {
-  //     const result = await authService.login(userName, password);
-  //     if (result.mustResetPassword) {
-  //       return res.status(403).json({
-  //         message: "You must reset your password on first login",
-  //         mustResetPassword: true,
-  //         userName: result.user.userName,
-  //       });
-  //     }
-  //     return res.json({ user: result.user, token: result.token });
-  //   } catch (err: any) {
-  //     return res.status(400).json({ error: err.message });
-  //   }
-  // };
+
   loginUser = async (req: Request, res: Response) => {
     const { userName, password } = req.body;
     try {
