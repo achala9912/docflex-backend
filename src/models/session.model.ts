@@ -14,6 +14,7 @@ const SessionSchema = new Schema<ISession>(
     startTime: { type: Date, required: true },
     endTime: { type: Date, required: true },
     isSessionActive: { type: Boolean, default: false },
+    isDeleted: { type: Boolean, default: false },
     modificationHistory: [
       {
         action: { type: String, enum: Object.values(ACTIONS) },

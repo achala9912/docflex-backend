@@ -13,6 +13,7 @@ export interface ISession extends Document {
   startTime: Date;
   endTime: Date;
   isSessionActive: boolean;
+  isDeleted: { type: Boolean; default: false };
   modificationHistory: IModification[];
   createdAt: Date;
   updatedAt: Date;
