@@ -3,7 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { connectDB } from "./config/db";
 import errorHandler from "./utils/errorHandler";
-
+import "./utils/cronJob";
 // Import versioned routes
 import v1AuthRoutes from "./routes/v1/auth.route";
 import v1RoleRoutes from "./routes/v1/role.route";

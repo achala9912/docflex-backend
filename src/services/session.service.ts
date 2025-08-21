@@ -3,6 +3,44 @@ import MedicalCenter from "../models/medicalCenter.model";
 import { ISession } from "../interfaces/session.interface";
 import { ACTIONS } from "../constants/modification-history.constant";
 
+// export const createSession = async (
+//   sessionData: any,
+//   createdBy: string
+// ): Promise<ISession> => {
+//   const center = await MedicalCenter.findById(sessionData.centerId)
+//     .select("centerId")
+//     .lean();
+
+//   if (!center) {
+//     throw new Error("Medical center not found");
+//   }
+
+//   const lastSession = await Session.findOne({ centerId: sessionData.centerId })
+//     .sort({ sessionId: -1 })
+//     .limit(1);
+
+//   const centerCode = center.centerId;
+//   const lastNumber = lastSession
+//     ? parseInt(lastSession.sessionId.split("-S")[1])
+//     : 0;
+//   const sessionId = `${centerCode}-S${(lastNumber + 1)
+//     .toString()
+//     .padStart(3, "0")}`;
+
+//   const session = new Session({
+//     ...sessionData,
+//     sessionId,
+//     modificationHistory: [
+//       {
+//         action: ACTIONS.CREATE,
+//         modifiedBy: createdBy,
+//         date: new Date(),
+//       },
+//     ],
+//   });
+
+//   return await session.save();
+// };
 export const createSession = async (
   sessionData: any,
   createdBy: string
@@ -11,10 +49,22 @@ export const createSession = async (
     .select("centerId")
     .lean();
 
-  if (!center) {
-    throw new Error("Medical center not found");
+  if (!center) throw new Error("Medical center not found");
+
+  // Check if session name already exists for this center
+  const existingSession = await Session.findOne({
+    centerId: sessionData.centerId,
+    sessionName: sessionData.sessionName,
+    isDeleted: { $ne: true },
+  });
+
+  if (existingSession) {
+    throw new Error(
+      `Session name "${sessionData.sessionName}" already exists for this center. Please choose a different name.`
+    );
   }
 
+  // Generate sessionId
   const lastSession = await Session.findOne({ centerId: sessionData.centerId })
     .sort({ sessionId: -1 })
     .limit(1);
@@ -23,6 +73,7 @@ export const createSession = async (
   const lastNumber = lastSession
     ? parseInt(lastSession.sessionId.split("-S")[1])
     : 0;
+
   const sessionId = `${centerCode}-S${(lastNumber + 1)
     .toString()
     .padStart(3, "0")}`;
@@ -31,11 +82,7 @@ export const createSession = async (
     ...sessionData,
     sessionId,
     modificationHistory: [
-      {
-        action: ACTIONS.CREATE,
-        modifiedBy: createdBy,
-        date: new Date(),
-      },
+      { action: ACTIONS.CREATE, modifiedBy: createdBy, date: new Date() },
     ],
   });
 
@@ -70,28 +117,22 @@ export const getAllSessions = async (params: {
   const skip = (page - 1) * limit;
   const query: any = {};
 
-
   if (!includeDeleted) {
-    query.isDeleted = { $ne: true }; 
+    query.isDeleted = { $ne: true };
   }
-
 
   if (centerId) {
     query.centerId = centerId;
   }
 
- 
   if (typeof isActive === "boolean") {
     query.isSessionActive = isActive;
   }
-
 
   if (search) {
     const searchRegex = new RegExp(search, "i");
     query.$or = [{ sessionId: searchRegex }, { sessionName: searchRegex }];
   }
-
- 
 
   const [sessions, total] = await Promise.all([
     Session.find(query)
@@ -164,23 +205,62 @@ export const deleteSession = async (
   );
 };
 
+// export const toggleSessionActive = async (
+//   sessionId: string,
+//   isActive: boolean,
+//   modifiedBy: string
+// ): Promise<ISession | null> => {
+//   return Session.findOneAndUpdate(
+//     { sessionId },
+//     {
+//       $set: { isSessionActive: isActive },
+//       $push: {
+//         modificationHistory: {
+//           action: isActive ? ACTIONS.ACTIVATE : ACTIONS.DEACTIVATE,
+//           modifiedBy,
+//           date: new Date(),
+//         },
+//       },
+//     },
+//     { new: true }
+//   );
+// };
+
 export const toggleSessionActive = async (
   sessionId: string,
   isActive: boolean,
   modifiedBy: string
 ): Promise<ISession | null> => {
-  return Session.findOneAndUpdate(
-    { sessionId },
-    {
-      $set: { isSessionActive: isActive },
-      $push: {
-        modificationHistory: {
-          action: isActive ? ACTIONS.ACTIVATE : ACTIONS.DEACTIVATE,
-          modifiedBy,
-          date: new Date(),
-        },
-      },
-    },
-    { new: true }
-  );
+  const session = await Session.findOne({ sessionId });
+  if (!session) {
+    throw new Error("Session not found");
+  }
+
+  const now = new Date();
+
+  if (isActive) {
+    if (session.startTime && session.startTime > now) {
+      throw new Error(
+        `Session "${
+          session.sessionName || session.sessionId
+        }" cannot be activated yet. It starts at ${session.startTime.toLocaleString()}.`
+      );
+    }
+    if (session.endTime && session.endTime < now) {
+      throw new Error(
+        `Session "${
+          session.sessionName || session.sessionId
+        }" has already ended at ${session.endTime.toLocaleString()} and cannot be activated.`
+      );
+    }
+  }
+
+  session.isSessionActive = isActive;
+  session.modificationHistory.push({
+    action: isActive ? ACTIONS.ACTIVATE : ACTIONS.DEACTIVATE,
+    modifiedBy,
+    date: new Date(),
+  });
+
+  return await session.save();
 };

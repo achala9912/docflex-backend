@@ -1,17 +1,36 @@
 import { Request, Response, NextFunction } from "express";
 import * as sessionService from "../services/session.service";
 
+// export const createSession = async (
+//   req: Request,
+//   res: Response,
+//   next: NextFunction
+// ): Promise<void> => {
+//   try {
+//     const createdBy = req.tokenData?.userId || "system";
+//     const session = await sessionService.createSession(req.body, createdBy);
+//     res.status(201).json(session);
+//   } catch (error) {
+//     next(error);
+//   }
+// };
 export const createSession = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const createdBy = req.tokenData?.userId || "system";
     const session = await sessionService.createSession(req.body, createdBy);
     res.status(201).json(session);
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    // Return a user-friendly message
+    res.status(400).json({
+      code: "SESSION_CREATE_FAILED",
+      message:
+        error.message ||
+        "Failed to create session. Please check your input and try again.",
+    });
   }
 };
 
@@ -110,27 +129,52 @@ export const deleteSession = async (
   }
 };
 
+// export const toggleSessionActive = async (
+//   req: Request,
+//   res: Response,
+//   next: NextFunction
+// ): Promise<void> => {
+//   try {
+//     const modifiedBy = req.tokenData?.userId || "system";
+//     const { isActive } = req.body;
+//     const session = await sessionService.toggleSessionActive(
+//       req.params.sessionId,
+//       isActive,
+//       modifiedBy
+//     );
+
+//     if (!session) {
+//       res.status(404).json({ error: "Session not found" });
+//       return;
+//     }
+
+//     res.json(session);
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+
 export const toggleSessionActive = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const modifiedBy = req.tokenData?.userId || "system";
     const { isActive } = req.body;
+
     const session = await sessionService.toggleSessionActive(
       req.params.sessionId,
       isActive,
       modifiedBy
     );
 
-    if (!session) {
-      res.status(404).json({ error: "Session not found" });
-      return;
-    }
-
     res.json(session);
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    // Send status + user-friendly message
+    res.status(400).json({
+      code: "SESSION_TOGGLE_FAILED",
+      message: error.message || "Failed to toggle session",
+    });
   }
 };
