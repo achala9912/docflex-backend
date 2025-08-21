@@ -32,7 +32,7 @@ v1Router.use("/medical-centers", v1MedicalCenterRoutes);
 v1Router.use("/patients", v1PatientsRoutes);
 v1Router.use("/sessions", v1SessionsRoutes);
 v1Router.use("/generic", v1GenericRoutes);
-v1Router.use("/appointment", v1AppointmentRoutes);
+v1Router.use("/appointments", v1AppointmentRoutes);
 
 // ✅ Mount versioned router
 app.use("/api/v1", v1Router);
@@ -45,7 +45,7 @@ app.use("/api/medical-centers", v1MedicalCenterRoutes);
 app.use("/api/patients", v1PatientsRoutes);
 app.use("/api/sessions", v1SessionsRoutes);
 app.use("/api/generic", v1GenericRoutes);
-app.use("/api/appointment", v1AppointmentRoutes);
+app.use("/api/appointments", v1AppointmentRoutes);
 
 // ✅ Global Error Handler (keep at bottom)
 app.use(errorHandler);

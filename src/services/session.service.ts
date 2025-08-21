@@ -264,3 +264,28 @@ export const toggleSessionActive = async (
 
   return await session.save();
 };
+
+export const getSessionSuggestions = async (params: {
+  centerId?: string;
+  search?: string;
+  limit?: number;
+}) => {
+  const { centerId, search = "", limit = 10 } = params;
+
+  const query: any = { isDeleted: { $ne: true } };
+
+  if (centerId) query.centerId = centerId;
+  if (search) query.sessionName = { $regex: search, $options: "i" };
+
+  const sessions = await Session.find(query)
+    .select("sessionId sessionName") 
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .lean();
+
+  return sessions.map((s) => ({
+    id: s._id,
+    sessionId: s.sessionId,
+    sessionName: s.sessionName,
+  }));
+};

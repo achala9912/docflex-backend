@@ -178,3 +178,28 @@ export const toggleSessionActive = async (
     });
   }
 };
+
+export const getSessionSuggestions = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { centerId, search, limit } = req.query;
+
+    const suggestions = await sessionService.getSessionSuggestions({
+      centerId: centerId?.toString(),
+      search: search?.toString(),
+      limit: limit ? Number(limit) : 10,
+    });
+
+    res.json(suggestions);
+  } catch (error: any) {
+    res.status(400).json({
+      code: "SESSION_SUGGESTION_FAILED",
+      message:
+        error.message ||
+        "Failed to fetch session suggestions. Please try again.",
+    });
+  }
+};
