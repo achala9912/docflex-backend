@@ -4,11 +4,25 @@ import session from "../models/session.model";
 import { IAppointment } from "../interfaces/appointment.interface";
 import { ISession } from "../interfaces/session.interface";
 import { ACTIONS } from "../constants/modification-history.constant";
+import twilio from "twilio";
+import Patient from "../models/patient.model";
+import nodemailer from "nodemailer";
+
+const client = twilio(process.env.TWILIO_SID!, process.env.TWILIO_AUTH_TOKEN!);
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD,
+  },
+});
 
 export const createAppointment = async (
   appointmentData: any,
   createdBy: string
 ): Promise<IAppointment> => {
+  // 1. Validate medical center
   const center = await MedicalCenter.findById(appointmentData.centerId)
     .select("centerId")
     .lean();
@@ -16,36 +30,26 @@ export const createAppointment = async (
     throw new Error("Medical center not found");
   }
 
+  // 2. Get session (no active check)
   const currentSession = await session
     .findOne({
       sessionId: appointmentData.sessionId,
       centerId: appointmentData.centerId,
-      isSessionActive: true,
     })
     .lean();
-
   if (!currentSession) {
-    throw new Error("Active session not found for this center");
+    throw new Error("Session not found for this center");
   }
 
-  const appointmentDate = new Date(appointmentData.appointmentDate);
-  if (
-    appointmentDate < new Date(currentSession.startTime) ||
-    appointmentDate > new Date(currentSession.endTime)
-  ) {
-    throw new Error("Cannot create appointment outside of session hours");
-  }
-
+  // 3. Get last token
   const lastAppointment = await appointment
-    .findOne({
-      sessionId: appointmentData.sessionId,
-    })
+    .findOne({ sessionId: appointmentData.sessionId })
     .sort({ tokenNo: -1 })
     .limit(1);
 
   const tokenNo = lastAppointment ? lastAppointment.tokenNo + 1 : 1;
 
-  // const centerCode = center.centerId;
+  // 4. Generate appointmentId
   const sessionCode = currentSession.sessionId
     .replace(/\s+/g, "")
     .toUpperCase();
@@ -56,8 +60,8 @@ export const createAppointment = async (
     .toString()
     .padStart(3, "0")}`;
 
+  // 5. Save appointment
   const now = new Date();
-
   const newAppointment = new appointment({
     ...appointmentData,
     appointmentId,
@@ -72,8 +76,45 @@ export const createAppointment = async (
       },
     ],
   });
+  const savedAppointment = await newAppointment.save();
 
-  return await newAppointment.save();
+  // 6. Notify patient (SMS + Email)
+  const patient = await Patient.findById(savedAppointment.patientId).lean();
+
+  if (patient) {
+    const msg = `Your Appointment booked successfully.\nAppointment ID: ${savedAppointment.appointmentId}\nToken No: ${savedAppointment.tokenNo}`;
+
+    // 🔹 SMS
+    if (patient.contactNo) {
+      try {
+        await client.messages.create({
+          body: msg,
+          from: process.env.TWILIO_PHONE_NUMBER,
+          to: patient.contactNo, // must be +947xxxxxxx
+        });
+        console.log("✅ SMS sent to", patient.contactNo);
+      } catch (error) {
+        console.error("❌ SMS failed:", error);
+      }
+    }
+
+    // 🔹 Email
+    if (patient.email) {
+      try {
+        await transporter.sendMail({
+          from: '"DocFlex Pro" <no-reply@docflexpro.com>',
+          to: patient.email,
+          subject: "Appointment Confirmation",
+          text: msg,
+        });
+        console.log("✅ Email sent to", patient.email);
+      } catch (error) {
+        console.error("❌ Email failed:", error);
+      }
+    }
+  }
+
+  return savedAppointment;
 };
 
 export const getCurrentSessionAppointments = async (
