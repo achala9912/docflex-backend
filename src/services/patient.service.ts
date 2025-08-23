@@ -18,7 +18,6 @@ export const createPatient = async (
   patientData: any,
   createdBy: string
 ): Promise<IPatient> => {
- 
   const center = await MedicalCenter.findById(patientData.centerId)
     .select("centerId")
     .lean();
@@ -65,8 +64,6 @@ export const createPatient = async (
 
   return populatedPatient.toObject() as IPatient;
 };
-
-
 
 export const updatePatient = async (
   patientId: string,
@@ -182,12 +179,75 @@ export const getAllPatients = async (
   };
 };
 
-
 export const getPatientById = async (
   patientId: string
 ): Promise<IPatient | null> => {
   return Patient.findOne({ patientId })
-    .populate('centerId', 'centerId centerName')
+    .populate("centerId", "centerId centerName")
     .lean()
     .exec();
 };
+
+export const getPatientSuggestions = async (
+  contactNo: string,
+  centerId?: string,
+  includeDeleted: boolean = false
+) => {
+  const query: any = {};
+
+  if (!includeDeleted) {
+    query.isDeleted = false;
+  }
+
+  if (centerId) {
+    query.centerId = centerId;
+  }
+
+  // Clean input
+  const cleaned = cleanContactNo(contactNo);
+
+  // Normalize Sri Lankan numbers: 0XXXXXXXXX → +94XXXXXXXXX
+  let normalized = cleaned;
+  if (cleaned.startsWith("0")) {
+    normalized = "+94" + cleaned.substring(1);
+  }
+
+  // Escape regex special chars
+  const escapedContact = escapeRegex(cleaned);
+  const escapedNormalized = escapeRegex(normalized);
+
+  query.$or = [
+    { contactNo: new RegExp(escapedContact, "i") },
+    { contactNo: new RegExp(escapedNormalized, "i") },
+  ];
+
+  console.log("Patient suggestion query:", query);
+
+  const patients = await Patient.find(query)
+    .populate("centerId", "centerId centerName")
+    .lean();
+
+  return patients.map((p) => ({
+    _id: p._id,
+    patientId: p.patientId,
+    title: p.title,
+    patientName: p.patientName,
+    gender: p.gender,
+    dob: p.dob,
+    age: p.age,
+    centerId: p.centerId,
+    contactNo: p.contactNo,
+    address: p.address,
+    nic: p.nic,
+    email: p.email,
+  }));
+};
+
+// helpers
+const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const cleanContactNo = (str: string) =>
+  str
+    .replace(/\s+/g, "")
+    .replace(/[\r\n]+/g, "")
+    .trim();

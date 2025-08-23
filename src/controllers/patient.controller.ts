@@ -105,3 +105,30 @@ export const getPatient = async (
     next(error);
   }
 };
+
+export const getPatientSuggestions = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const contactNo = String(req.query.contactNo || "");
+    const centerId = req.query.centerId?.toString();
+    const includeDeleted = req.query.includeDeleted === "true";
+
+    if (!contactNo) {
+      res.status(400).json({ error: "contactNo is required" });
+      return;
+    }
+
+    const patients = await patientService.getPatientSuggestions(
+      contactNo,
+      centerId,
+      includeDeleted
+    );
+
+    res.json(patients);
+  } catch (error) {
+    next(error);
+  }
+};

@@ -38,6 +38,13 @@ router.get(
   checkPermission(PERMISSIONS.PATIENT_MANAGEMENT),
   patientController.getAllPatients
 );
+
+router.get(
+  "/suggestions",
+  checkPermission(PERMISSIONS.PATIENT_MANAGEMENT),
+  patientController.getPatientSuggestions
+);
+
 router.get(
   "/:patientId",
   checkPermission(PERMISSIONS.PATIENT_MANAGEMENT),
