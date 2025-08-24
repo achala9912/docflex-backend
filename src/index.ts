@@ -56,5 +56,8 @@ connectDB().then(() => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log(`API v1 endpoints available at /api/v1/`);
     console.log(`Legacy endpoints available at /api/`);
+    console.log("TWILIO_PHONE_NUMBER:", process.env.TWILIO_PHONE_NUMBER);
+    console.log("TWILIO_SID:", process.env.TWILIO_SID);
+    console.log("TWILIO_AUTH_TOKEN:", process.env.TWILIO_AUTH_TOKEN);
   });
 });

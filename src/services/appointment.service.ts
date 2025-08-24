@@ -139,19 +139,42 @@ export const createAppointment = async (
     // 🔹 SMS Notification
     // =============================
     if (patient.contactNo) {
-      const smsMsg = `Your appointment is confirmed.
-Appointment ID: ${savedAppointment.appointmentId}
-Token No: ${savedAppointment.tokenNo}
-Date: ${appointmentDate.toDateString()}
-Session: ${currentSession.sessionName}`;
+      const smsMsg = `✅ Appointment Confirmed!
+
+👤 Patient: ${patient.patientName}
+🏥 Center: ${center.centerName}
+📍 Address: ${center.address}
+📞 Contact: ${center.contactNo}
+
+🎫 Appointment ID: ${savedAppointment.appointmentId}
+🔢 Token No: ${savedAppointment.tokenNo}
+📅 Date: ${appointmentDate.toDateString()}
+⏰ Session: ${currentSession.sessionName}
+
+Please arrive 10 minutes before your session.`;
+
       try {
-        await client.messages.create({
+        // Send SMS
+        const message = await client.messages.create({
           body: smsMsg,
           from: process.env.TWILIO_PHONE_NUMBER,
           to: patient.contactNo,
         });
-      } catch (error) {
-        console.error("❌ SMS failed:", error);
+
+        console.log(`📲 Sending SMS to patient: ${patient.contactNo}`);
+        console.log(`📄 SMS content: ${smsMsg}`);
+        console.log(`✅ SMS sent! Message SID: ${message.sid}`);
+
+        // Fetch message status
+        const messageDetails = await client.messages(message.sid).fetch();
+        console.log(`ℹ️ Message Status: ${messageDetails.status}`);
+        if (messageDetails.errorCode) {
+          console.error(
+            `❌ SMS Error: ${messageDetails.errorMessage} (Code: ${messageDetails.errorCode})`
+          );
+        }
+      } catch (error: any) {
+        console.error("❌ SMS failed:", error.message || error);
       }
     }
 
@@ -218,7 +241,6 @@ export const getAppointmentById = async (
     sessionId: sess,
   };
 };
-
 
 export const getAllAppointments = async (params: {
   date?: string;
@@ -342,9 +364,6 @@ export const getAllAppointments = async (params: {
     debug: debugInfo,
   };
 };
-
-
-
 
 export const cancelAppointment = async (
   appointmentId: string,
