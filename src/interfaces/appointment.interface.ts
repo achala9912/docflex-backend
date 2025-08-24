@@ -1,6 +1,7 @@
 import { Document, Types } from "mongoose";
 import { IMedicalCenter } from "./medicalCenter.interface";
 import { IPatient } from "./patient.interface";
+import { ISession } from "./session.interface";
 
 export interface IModification {
   action?: string | null;
@@ -11,7 +12,9 @@ export interface IAppointment extends Document {
   date: Date;
   appointmentId: string;
   tokenNo: number;
-  sessionId: string;
+  // sessionId: string;
+  sessionId: Types.ObjectId | string | ISession | null;
+
   status: string;
   patientId: Types.ObjectId | IPatient;
   centerId: Types.ObjectId | IMedicalCenter;

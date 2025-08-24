@@ -135,3 +135,91 @@ Do not share these credentials with anyone. For assistance, contact support.
 `,
   };
 };
+
+export const appointmentConfirmationTemplate = (
+  patientName: string,
+  centerName: string,
+  centerAddress: string,
+  appointmentId: string,
+  tokenNo: number,
+  date: string,
+  sessionName: string
+) => `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Appointment Confirmation</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f9fafb;
+  }
+  .header {
+    background-color: #0087a9ff;
+    color: white;
+    padding: 20px;
+    text-align: center;
+    border-radius: 8px 8px 0 0;
+  }
+  .content {
+    padding: 20px;
+    background-color: #ffffff;
+    border-radius: 0 0 8px 8px;
+    border: 1px solid #e5e7eb;
+  }
+  .details {
+    background-color: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 15px;
+    margin: 20px 0;
+  }
+  .details p {
+    margin: 6px 0;
+    font-size: 15px;
+  }
+  .footer {
+    margin-top: 20px;
+    font-size: 12px;
+    color: #6b7280;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h2>DocFlex Pro</h2>
+  </div>
+  <div class="content">
+    <h3>Hello ${patientName || "Patient"},</h3>
+    <p>Your appointment has been <strong>successfully booked</strong>. Below are your details:</p>
+    
+    <div class="details">
+      <p><strong>Appointment ID:</strong> ${appointmentId}</p>
+      <p><strong>Token No:</strong> ${tokenNo}</p>
+      <p><strong>Date:</strong> ${new Date(date).toDateString()}</p>
+      <p><strong>Session:</strong> ${sessionName}</p>
+    </div>
+
+    <h4>Medical Center Details:</h4>
+    <p><strong>${centerName}</strong></p>
+    <p>${centerAddress}</p>
+
+    <p>Please arrive at least 15 minutes before your scheduled time.  
+    If you are unable to attend, kindly contact the center to reschedule or cancel.</p>
+
+    <div class="footer">
+      <p>© ${new Date().getFullYear()} DocFlex Pro. All rights reserved.</p>
+      <p>This is an automated message. Please do not reply.</p>
+    </div>
+  </div>
+</body>
+</html>
+`;

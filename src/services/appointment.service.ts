@@ -30,44 +30,95 @@ export const createAppointment = async (
     throw new Error("Medical center not found");
   }
 
-  // 2. Get session (no active check)
+  // 2. Get session
   const currentSession = await session
     .findOne({
       sessionId: appointmentData.sessionId,
       centerId: appointmentData.centerId,
+      isDeleted: { $ne: true },
     })
     .lean();
+
   if (!currentSession) {
     throw new Error("Session not found for this center");
   }
 
-  // 3. Get last token
+  // 3. Check if session end time has passed (for the given date)
+  const appointmentDate = new Date(appointmentData.date);
+
+  // build session end datetime for this appointment date
+  const sessionEnd = new Date(appointmentDate);
+  sessionEnd.setHours(
+    new Date(currentSession.endTime).getHours(),
+    new Date(currentSession.endTime).getMinutes(),
+    0,
+    0
+  );
+
+  if (new Date() > sessionEnd) {
+    throw new Error("Cannot create appointment after session end time");
+  }
+
+  // 4. Prevent duplicate appointment for same patient on same date/session/center
+  const startOfDay = new Date(appointmentDate);
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const endOfDay = new Date(appointmentDate);
+  endOfDay.setHours(23, 59, 59, 999);
+
+  const existing = await appointment.findOne({
+    patientId: appointmentData.patientId,
+    centerId: appointmentData.centerId,
+    sessionId: appointmentData.sessionId,
+    date: { $gte: startOfDay, $lte: endOfDay },
+    isCancelled: { $ne: true },
+  });
+
+  if (existing) {
+    throw new Error(
+      "Patient already has an appointment for this session on this date"
+    );
+  }
+
+  // 5. Find last token for this session on the same date
   const lastAppointment = await appointment
-    .findOne({ sessionId: appointmentData.sessionId })
+    .findOne({
+      sessionId: appointmentData.sessionId,
+      centerId: appointmentData.centerId,
+      date: { $gte: startOfDay, $lte: endOfDay },
+    })
     .sort({ tokenNo: -1 })
-    .limit(1);
+    .lean();
 
   const tokenNo = lastAppointment ? lastAppointment.tokenNo + 1 : 1;
 
-  // 4. Generate appointmentId
+  // 6. Generate appointmentId (include date so it's unique per day)
   const sessionCode = currentSession.sessionId
     .replace(/\s+/g, "")
     .toUpperCase();
+
+  // Format date as YYYYMMDD
+  const dateCode = appointmentDate
+    .toISOString()
+    .split("T")[0]
+    .replace(/-/g, "");
+
+  // Get last number for the same session+date
   const lastNumber = lastAppointment
     ? parseInt(lastAppointment.appointmentId.split("-A")[1])
     : 0;
-  const appointmentId = `${sessionCode}-A${(lastNumber + 1)
+
+  const appointmentId = `${sessionCode}-${dateCode}-A${(lastNumber + 1)
     .toString()
     .padStart(3, "0")}`;
 
-  // 5. Save appointment
+  // 7. Save appointment
   const now = new Date();
   const newAppointment = new appointment({
     ...appointmentData,
     appointmentId,
     tokenNo,
-    date: now,
-    status: "completed",
+    status: "scheduled",
     modificationHistory: [
       {
         action: ACTIONS.CREATE,
@@ -76,13 +127,18 @@ export const createAppointment = async (
       },
     ],
   });
+
   const savedAppointment = await newAppointment.save();
 
-  // 6. Notify patient (SMS + Email)
+  // 8. Notify patient (SMS + Email)
   const patient = await Patient.findById(savedAppointment.patientId).lean();
 
   if (patient) {
-    const msg = `Your Appointment booked successfully.\nAppointment ID: ${savedAppointment.appointmentId}\nToken No: ${savedAppointment.tokenNo}`;
+    const msg = `Your Appointment booked successfully.
+Appointment ID: ${savedAppointment.appointmentId}
+Token No: ${savedAppointment.tokenNo}
+Date: ${appointmentDate.toDateString()}
+Session: ${currentSession.sessionName}`;
 
     // 🔹 SMS
     if (patient.contactNo) {
@@ -92,7 +148,6 @@ export const createAppointment = async (
           from: process.env.TWILIO_PHONE_NUMBER,
           to: patient.contactNo, // must be +947xxxxxxx
         });
-        console.log("✅ SMS sent to", patient.contactNo);
       } catch (error) {
         console.error("❌ SMS failed:", error);
       }
@@ -107,7 +162,6 @@ export const createAppointment = async (
           subject: "Appointment Confirmation",
           text: msg,
         });
-        console.log("✅ Email sent to", patient.email);
       } catch (error) {
         console.error("❌ Email failed:", error);
       }
@@ -130,19 +184,98 @@ export const getCurrentSessionAppointments = async (
 export const getAppointmentById = async (
   appointmentId: string
 ): Promise<IAppointment | null> => {
-  return appointment
+  const appt = await appointment
     .findOne({ appointmentId })
     .populate("centerId", "centerId centerName")
-    .populate("patientId", "patientId patientName")
-    .populate({
-      path: "sessionId",
-      select: "sessionId sessionName startTime endTime isSessionActive",
-      match: { isDeleted: { $ne: true } },
-    })
+    .populate(
+      "patientId",
+      "patientId patientName age email contactNo address nic remark"
+    )
     .lean();
+
+  if (!appt) return null;
+
+  const sess = await session
+    .findOne({ sessionId: appt.sessionId, isDeleted: { $ne: true } })
+    .select("sessionId sessionName startTime endTime isSessionActive")
+    .lean();
+
+  return {
+    ...appt,
+    sessionId: sess,
+  };
 };
 
+// export const getAllAppointments = async (params: {
+//   page?: number;
+//   limit?: number;
+//   search?: string;
+//   centerId?: string;
+//   isPatientvisited?: boolean;
+//   includeDeleted?: boolean;
+// }): Promise<{
+//   data: IAppointment[];
+//   total: number;
+//   totalPages: number;
+//   currentPage: number;
+//   limit: number;
+// }> => {
+//   const {
+//     page = 1,
+//     limit = 10,
+//     search = "",
+//     centerId,
+//     isPatientvisited,
+//     includeDeleted = false,
+//   } = params;
+
+//   const query: any = {};
+
+//   if (search) {
+//     query.$or = [
+//       { appointmentId: { $regex: search, $options: "i" } },
+//       { patientId: { $regex: search, $options: "i" } },
+//     ];
+//   }
+
+//   if (centerId) {
+//     query.centerId = centerId;
+//   }
+
+//   if (typeof isPatientvisited === "boolean") {
+//     query.isPatientvisited = isPatientvisited;
+//   }
+
+//   if (!includeDeleted) {
+//     query.isDeleted = { $ne: true };
+//   }
+
+//   const total = await appointment.countDocuments(query);
+//   const data = await appointment
+//     .find(query)
+//     .populate("centerId", "centerId centerName")
+//     .populate(
+//       "patientId",
+//       "patientId patientName age email contactNo address nic remark"
+//     )
+//     .populate("sessionId", "sessionName startTime endTime")
+//     .sort({ date: -1, tokenNo: 1 })
+//     .skip((page - 1) * limit)
+//     .limit(limit)
+//     .lean();
+
+//   return {
+//     data,
+//     total,
+//     totalPages: Math.ceil(total / limit),
+//     currentPage: page,
+//     limit,
+//   };
+// };
+
 export const getAllAppointments = async (params: {
+  date?: string;
+  sessionId?: string;
   page?: number;
   limit?: number;
   search?: string;
@@ -155,8 +288,11 @@ export const getAllAppointments = async (params: {
   totalPages: number;
   currentPage: number;
   limit: number;
+  debug?: any; // Add debug info to response
 }> => {
   const {
+    date,
+    sessionId,
     page = 1,
     limit = 10,
     search = "",
@@ -166,36 +302,89 @@ export const getAllAppointments = async (params: {
   } = params;
 
   const query: any = {};
+  let debugInfo: any = {};
 
+  // 🔹 Search filter
   if (search) {
     query.$or = [
       { appointmentId: { $regex: search, $options: "i" } },
-      { patientId: { $regex: search, $options: "i" } },
+      { patientName: { $regex: search, $options: "i" } },
     ];
   }
 
-  if (centerId) {
-    query.centerId = centerId;
-  }
-
-  if (typeof isPatientvisited === "boolean") {
+  if (centerId) query.centerId = centerId;
+  if (typeof isPatientvisited === "boolean")
     query.isPatientvisited = isPatientvisited;
+  if (!includeDeleted) query.isDeleted = { $ne: true };
+  if (sessionId) query.sessionId = sessionId;
+
+  if (date) {
+    // Add debug info
+    debugInfo.inputDate = date;
+
+    // date filtering (with UTC conversion)
+    const [year, month, day] = date.split("-").map(Number);
+    debugInfo.parsedDate = { year, month, day };
+
+    const startDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+    startDate.setMinutes(startDate.getMinutes() - 330); // Sri Lanka UTC offset
+
+    const endDate = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
+    endDate.setMinutes(endDate.getMinutes() - 330);
+
+    debugInfo.dateRange = {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      startDateLocal: startDate.toString(),
+      endDateLocal: endDate.toString(),
+    };
+
+    query.date = { $gte: startDate, $lte: endDate };
   }
 
-  if (!includeDeleted) {
-    query.isDeleted = { $ne: true };
-  }
+  debugInfo.finalQuery = JSON.stringify(query, null, 2);
 
+  // 🔹 Count total documents
   const total = await appointment.countDocuments(query);
-  const data = await appointment
+
+  // 🔹 Fetch appointments with center and patient info
+  const rawAppointments = await appointment
     .find(query)
     .populate("centerId", "centerId centerName")
-    .populate("patientId", "patientId patientName")
-    .populate("sessionId", "sessionName startTime endTime")
+    .populate(
+      "patientId",
+      "patientId patientName age email contactNo address nic remark gender"
+    )
     .sort({ date: -1, tokenNo: 1 })
     .skip((page - 1) * limit)
     .limit(limit)
     .lean();
+
+  // Add debug info about found appointments
+  debugInfo.foundAppointments = rawAppointments.map((a) => ({
+    appointmentId: a.appointmentId,
+    date: a.date,
+    dateString: new Date(a.date).toISOString(),
+  }));
+
+  // 🔹 Fetch all session details in bulk
+  const sessionIds = rawAppointments.map((a) => a.sessionId);
+  const sessions = await session
+    .find({ sessionId: { $in: sessionIds }, isDeleted: { $ne: true } })
+    .select("sessionId sessionName startTime endTime isSessionActive")
+    .lean();
+
+  // 🔹 Map sessionId → session object
+  const sessionMap = new Map<string, ISession>();
+  sessions.forEach((s) => {
+    sessionMap.set(String(s.sessionId), s);
+  });
+
+  // 🔹 Merge session details into appointments
+  const data = rawAppointments.map((a) => ({
+    ...a,
+    sessionId: sessionMap.get(String(a.sessionId)) || null,
+  }));
 
   return {
     data,
@@ -203,6 +392,7 @@ export const getAllAppointments = async (params: {
     totalPages: Math.ceil(total / limit),
     currentPage: page,
     limit,
+    debug: debugInfo,
   };
 };
 

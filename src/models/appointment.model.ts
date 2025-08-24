@@ -8,7 +8,7 @@ const AppointmentSchema = new Schema<IAppointment>(
     appointmentId: { type: String, required: true, unique: true },
     tokenNo: { type: Number, required: true },
     status: { type: String, required: true },
-    sessionId: { type: String, required: true, unique: true },
+    sessionId: { type: String, required: true,  index: true,   },
     patientId: {
       type: Schema.Types.ObjectId,
       ref: "Patient",
