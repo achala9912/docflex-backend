@@ -7,6 +7,7 @@ import { ACTIONS } from "../constants/modification-history.constant";
 import twilio from "twilio";
 import Patient from "../models/patient.model";
 import nodemailer from "nodemailer";
+import { appointmentConfirmationTemplate } from "../utils/otpEmailTemplates";
 
 const client = twilio(process.env.TWILIO_SID!, process.env.TWILIO_AUTH_TOKEN!);
 
@@ -24,11 +25,15 @@ export const createAppointment = async (
 ): Promise<IAppointment> => {
   // 1. Validate medical center
   const center = await MedicalCenter.findById(appointmentData.centerId)
-    .select("centerId")
+    .select("centerId centerName address contactNo")
     .lean();
+
   if (!center) {
     throw new Error("Medical center not found");
   }
+
+  // Alias for template consistency
+  const centerAddress = center?.address || "";
 
   // 2. Get session
   const currentSession = await session
@@ -45,8 +50,6 @@ export const createAppointment = async (
 
   // 3. Check if session end time has passed (for the given date)
   const appointmentDate = new Date(appointmentData.date);
-
-  // build session end datetime for this appointment date
   const sessionEnd = new Date(appointmentDate);
   sessionEnd.setHours(
     new Date(currentSession.endTime).getHours(),
@@ -97,13 +100,11 @@ export const createAppointment = async (
     .replace(/\s+/g, "")
     .toUpperCase();
 
-  // Format date as YYYYMMDD
   const dateCode = appointmentDate
     .toISOString()
     .split("T")[0]
     .replace(/-/g, "");
 
-  // Get last number for the same session+date
   const lastNumber = lastAppointment
     ? parseInt(lastAppointment.appointmentId.split("-A")[1])
     : 0;
@@ -130,37 +131,49 @@ export const createAppointment = async (
 
   const savedAppointment = await newAppointment.save();
 
-  // 8. Notify patient (SMS + Email)
+  // 8. Fetch patient
   const patient = await Patient.findById(savedAppointment.patientId).lean();
 
   if (patient) {
-    const msg = `Your Appointment booked successfully.
+    // =============================
+    // 🔹 SMS Notification
+    // =============================
+    if (patient.contactNo) {
+      const smsMsg = `Your appointment is confirmed.
 Appointment ID: ${savedAppointment.appointmentId}
 Token No: ${savedAppointment.tokenNo}
 Date: ${appointmentDate.toDateString()}
 Session: ${currentSession.sessionName}`;
-
-    // 🔹 SMS
-    if (patient.contactNo) {
       try {
         await client.messages.create({
-          body: msg,
+          body: smsMsg,
           from: process.env.TWILIO_PHONE_NUMBER,
-          to: patient.contactNo, // must be +947xxxxxxx
+          to: patient.contactNo,
         });
       } catch (error) {
         console.error("❌ SMS failed:", error);
       }
     }
 
-    // 🔹 Email
+    // =============================
+    // 🔹 Email Notification
+    // =============================
     if (patient.email) {
       try {
         await transporter.sendMail({
           from: '"DocFlex Pro" <no-reply@docflexpro.com>',
           to: patient.email,
           subject: "Appointment Confirmation",
-          text: msg,
+          html: appointmentConfirmationTemplate(
+            patient.patientName || "Patient",
+            center.centerName || "Medical Center",
+            centerAddress,
+            center.contactNo,
+            savedAppointment.appointmentId,
+            savedAppointment.tokenNo,
+            appointmentDate.toDateString(),
+            currentSession.sessionName
+          ),
         });
       } catch (error) {
         console.error("❌ Email failed:", error);
@@ -206,72 +219,6 @@ export const getAppointmentById = async (
   };
 };
 
-// export const getAllAppointments = async (params: {
-//   page?: number;
-//   limit?: number;
-//   search?: string;
-//   centerId?: string;
-//   isPatientvisited?: boolean;
-//   includeDeleted?: boolean;
-// }): Promise<{
-//   data: IAppointment[];
-//   total: number;
-//   totalPages: number;
-//   currentPage: number;
-//   limit: number;
-// }> => {
-//   const {
-//     page = 1,
-//     limit = 10,
-//     search = "",
-//     centerId,
-//     isPatientvisited,
-//     includeDeleted = false,
-//   } = params;
-
-//   const query: any = {};
-
-//   if (search) {
-//     query.$or = [
-//       { appointmentId: { $regex: search, $options: "i" } },
-//       { patientId: { $regex: search, $options: "i" } },
-//     ];
-//   }
-
-//   if (centerId) {
-//     query.centerId = centerId;
-//   }
-
-//   if (typeof isPatientvisited === "boolean") {
-//     query.isPatientvisited = isPatientvisited;
-//   }
-
-//   if (!includeDeleted) {
-//     query.isDeleted = { $ne: true };
-//   }
-
-//   const total = await appointment.countDocuments(query);
-//   const data = await appointment
-//     .find(query)
-//     .populate("centerId", "centerId centerName")
-//     .populate(
-//       "patientId",
-//       "patientId patientName age email contactNo address nic remark"
-//     )
-//     .populate("sessionId", "sessionName startTime endTime")
-//     .sort({ date: -1, tokenNo: 1 })
-//     .skip((page - 1) * limit)
-//     .limit(limit)
-//     .lean();
-
-//   return {
-//     data,
-//     total,
-//     totalPages: Math.ceil(total / limit),
-//     currentPage: page,
-//     limit,
-//   };
-// };
 
 export const getAllAppointments = async (params: {
   date?: string;
@@ -288,7 +235,7 @@ export const getAllAppointments = async (params: {
   totalPages: number;
   currentPage: number;
   limit: number;
-  debug?: any; // Add debug info to response
+  debug?: any;
 }> => {
   const {
     date,
@@ -396,6 +343,9 @@ export const getAllAppointments = async (params: {
   };
 };
 
+
+
+
 export const cancelAppointment = async (
   appointmentId: string,
   cancelledBy: string
@@ -416,7 +366,7 @@ export const cancelAppointment = async (
   const updatedAppointment = await appointment.findOneAndUpdate(
     { appointmentId },
     {
-      $set: { status: "cancel" },
+      $set: { status: "cancelled" },
       $push: {
         modificationHistory: {
           action: ACTIONS.CANCEL,

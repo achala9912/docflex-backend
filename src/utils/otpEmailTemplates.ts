@@ -140,6 +140,7 @@ export const appointmentConfirmationTemplate = (
   patientName: string,
   centerName: string,
   centerAddress: string,
+  centerContactNo:string,
   appointmentId: string,
   tokenNo: number,
   date: string,
@@ -211,6 +212,7 @@ export const appointmentConfirmationTemplate = (
     <h4>Medical Center Details:</h4>
     <p><strong>${centerName}</strong></p>
     <p>${centerAddress}</p>
+     <p>${centerContactNo}</p>
 
     <p>Please arrive at least 15 minutes before your scheduled time.  
     If you are unable to attend, kindly contact the center to reschedule or cancel.</p>
