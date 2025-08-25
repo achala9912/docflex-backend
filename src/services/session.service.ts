@@ -239,18 +239,31 @@ export const toggleSessionActive = async (
   const now = new Date();
 
   if (isActive) {
+    const timeOptions: Intl.DateTimeFormatOptions = {
+      hour: "numeric",
+      minute: "numeric",
+      hour12: true, 
+    };
+
     if (session.startTime && session.startTime > now) {
       throw new Error(
         `Session "${
           session.sessionName || session.sessionId
-        }" cannot be activated yet. It starts at ${session.startTime.toLocaleString()}.`
+        }" cannot be activated yet. It starts at ${session.startTime.toLocaleTimeString(
+          undefined,
+          timeOptions
+        )}.`
       );
     }
+
     if (session.endTime && session.endTime < now) {
       throw new Error(
         `Session "${
           session.sessionName || session.sessionId
-        }" has already ended at ${session.endTime.toLocaleString()} and cannot be activated.`
+        }" has already ended at ${session.endTime.toLocaleTimeString(
+          undefined,
+          timeOptions
+        )} and cannot be activated.`
       );
     }
   }
@@ -278,7 +291,7 @@ export const getSessionSuggestions = async (params: {
   if (search) query.sessionName = { $regex: search, $options: "i" };
 
   const sessions = await Session.find(query)
-    .select("sessionId sessionName") 
+    .select("sessionId sessionName")
     .sort({ createdAt: -1 })
     .limit(limit)
     .lean();
