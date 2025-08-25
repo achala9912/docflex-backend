@@ -7,7 +7,7 @@ import { ACTIONS } from "../constants/modification-history.constant";
 import twilio from "twilio";
 import Patient from "../models/patient.model";
 import nodemailer from "nodemailer";
-import { appointmentConfirmationTemplate } from "../utils/otpEmailTemplates";
+import { appointmentCancellationTemplate, appointmentConfirmationTemplate } from "../utils/otpEmailTemplates";
 
 const client = twilio(process.env.TWILIO_SID!, process.env.TWILIO_AUTH_TOKEN!);
 
@@ -480,14 +480,6 @@ export const cancelAppointment = async (
     throw new Error("Appointment not found");
   }
 
-  // REMOVED: Session active check - no longer needed
-  // const currentSession = await session.findOne({
-  //   sessionId: appointmentToCancel.sessionId,
-  // });
-  // if (!currentSession?.isSessionActive) {
-  //   throw new Error("Cannot cancel appointment for inactive session");
-  // }
-
   const updatedAppointment = await appointment.findOneAndUpdate(
     { appointmentId },
     {
@@ -548,19 +540,12 @@ export const cancelAppointment = async (
 Your appointment has been cancelled. Please contact the center for rescheduling.`;
 
           try {
-            // Send SMS
             const message = await client.messages.create({
               body: smsMsg,
               from: process.env.TWILIO_PHONE_NUMBER,
               to: patient.contactNo,
             });
-
-            console.log(
-              `📲 Sending cancellation SMS to patient: ${patient.contactNo}`
-            );
-            console.log(
-              `✅ Cancellation SMS sent! Message SID: ${message.sid}`
-            );
+            console.log(`📲 Cancellation SMS sent to: ${patient.contactNo}`);
           } catch (error: any) {
             console.error(
               "❌ Cancellation SMS failed:",
@@ -574,83 +559,21 @@ Your appointment has been cancelled. Please contact the center for rescheduling.
         // =============================
         if (patient.email) {
           try {
-            const emailSubject = "Appointment Cancellation Notification";
-            const emailHtml = `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Appointment Cancellation</title>
-    <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #f8f9fa; padding: 20px; text-align: center; border-radius: 5px; }
-        .content { background: #fff; padding: 20px; border-radius: 5px; margin-top: 10px; }
-        .info-item { margin-bottom: 10px; }
-        .label { font-weight: bold; color: #555; }
-        .cancelled { color: #dc3545; font-weight: bold; }
-        .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h2>❌ Appointment Cancelled</h2>
-        </div>
-        <div class="content">
-            <p>Dear ${patient.patientName},</p>
-            <p>Your appointment has been cancelled. Here are the details:</p>
-            
-            <div class="info-item">
-                <span class="label">Patient:</span> ${patient.patientName}
-            </div>
-            <div class="info-item">
-                <span class="label">Medical Center:</span> ${center.centerName}
-            </div>
-            <div class="info-item">
-                <span class="label">Address:</span> ${center.address}
-            </div>
-            <div class="info-item">
-                <span class="label">Contact:</span> ${center.contactNo}
-            </div>
-            <div class="info-item">
-                <span class="label">Appointment ID:</span> ${
-                  updatedAppointment.appointmentId
-                }
-            </div>
-            <div class="info-item">
-                <span class="label">Token No:</span> ${
-                  updatedAppointment.tokenNo
-                }
-            </div>
-            <div class="info-item">
-                <span class="label">Date:</span> ${appointmentDate.toDateString()}
-            </div>
-            <div class="info-item">
-                <span class="label">Session:</span> ${
-                  currentSession.sessionName
-                }
-            </div>
-            
-            <p style="margin-top: 20px; color: #dc3545;" class="cancelled">
-                ⚠️ This appointment has been cancelled. Please contact the medical center for rescheduling.
-            </p>
-        </div>
-        <div class="footer">
-            <p>This is an automated message. Please do not reply to this email.</p>
-            <p>© ${new Date().getFullYear()} DocFlex Pro. All rights reserved.</p>
-        </div>
-    </div>
-</body>
-</html>`;
-
             await transporter.sendMail({
               from: '"DocFlex Pro" <no-reply@docflexpro.com>',
               to: patient.email,
-              subject: emailSubject,
-              html: emailHtml,
+              subject: "Appointment Cancellation Notification",
+              html: appointmentCancellationTemplate(
+                patient.patientName || "Patient",
+                center.centerName || "Medical Center",
+                center.address || "",
+                center.contactNo || "",
+                updatedAppointment.appointmentId,
+                updatedAppointment.tokenNo,
+                appointmentDate.toDateString(),
+                currentSession.sessionName
+              ),
             });
-
             console.log(`📧 Cancellation email sent to: ${patient.email}`);
           } catch (error) {
             console.error("❌ Cancellation email failed:", error);
@@ -662,7 +585,6 @@ Your appointment has been cancelled. Please contact the center for rescheduling.
         "❌ Error sending cancellation notifications:",
         notificationError
       );
-      // Don't throw error - appointment cancellation should succeed even if notifications fail
     }
   }
 
