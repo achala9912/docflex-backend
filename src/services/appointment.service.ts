@@ -409,10 +409,22 @@ export const updateAppointmentStatus = async (
 
   if (typeof status.isPatientvisited === "boolean") {
     updatePayload.$set.isPatientvisited = status.isPatientvisited;
+
+    // ✅ auto-change status if patient visited
+    if (status.isPatientvisited) {
+      updatePayload.$set.status = "completed";
+    } else {
+      // if un-marking patient visited, revert to scheduled (optional)
+      updatePayload.$set.status = "scheduled";
+    }
   }
 
   if (typeof status.isCancelled === "boolean") {
     updatePayload.$set.isCancelled = status.isCancelled;
+
+    if (status.isCancelled) {
+      updatePayload.$set.status = "cancelled";
+    }
   }
 
   updatePayload.$push = {
