@@ -7,7 +7,10 @@ import { ACTIONS } from "../constants/modification-history.constant";
 import twilio from "twilio";
 import Patient from "../models/patient.model";
 import nodemailer from "nodemailer";
-import { appointmentCancellationTemplate, appointmentConfirmationTemplate } from "../utils/otpEmailTemplates";
+import {
+  appointmentCancellationTemplate,
+  appointmentConfirmationTemplate,
+} from "../utils/otpEmailTemplates";
 
 const client = twilio(process.env.TWILIO_SID!, process.env.TWILIO_AUTH_TOKEN!);
 
@@ -324,7 +327,7 @@ export const getAllAppointments = async (params: {
       "patientId",
       "patientId patientName age email contactNo address nic remark gender"
     )
-    .sort({ date: -1, tokenNo: 1 })
+    .sort({ date: -1, tokenNo: -1 })
     .skip((page - 1) * limit)
     .limit(limit)
     .lean();
