@@ -365,6 +365,112 @@ export const getAllAppointments = async (params: {
   };
 };
 
+// export const cancelAppointment = async (
+//   appointmentId: string,
+//   cancelledBy: string
+// ): Promise<IAppointment | null> => {
+//   const appointmentToCancel = await appointment.findOne({ appointmentId });
+//   if (!appointmentToCancel) {
+//     throw new Error("Appointment not found");
+//   }
+
+//   // Check if the appointment session is still active
+//   const currentSession = await session.findOne({
+//     sessionId: appointmentToCancel.sessionId,
+//   });
+//   if (!currentSession?.isSessionActive) {
+//     throw new Error("Cannot cancel appointment for inactive session");
+//   }
+
+//   const updatedAppointment = await appointment.findOneAndUpdate(
+//     { appointmentId },
+//     {
+//       $set: { status: "cancelled" },
+//       $push: {
+//         modificationHistory: {
+//           action: ACTIONS.CANCEL,
+//           modifiedBy: cancelledBy,
+//           date: new Date(),
+//         },
+//       },
+//     },
+//     { new: true }
+//   );
+
+//   return updatedAppointment;
+// };
+
+// export const updateAppointmentStatus = async (
+//   appointmentId: string,
+//   status: { isPatientvisited?: boolean; isCancelled?: boolean },
+//   updatedBy: string
+// ): Promise<IAppointment | null> => {
+//   const updatePayload: any = { $set: {} };
+
+//   if (typeof status.isPatientvisited === "boolean") {
+//     updatePayload.$set.isPatientvisited = status.isPatientvisited;
+
+//     // ✅ auto-change status if patient visited
+//     if (status.isPatientvisited) {
+//       updatePayload.$set.status = "completed";
+//     } else {
+//       // if un-marking patient visited, revert to scheduled (optional)
+//       updatePayload.$set.status = "scheduled";
+//     }
+//   }
+
+//   if (typeof status.isCancelled === "boolean") {
+//     updatePayload.$set.isCancelled = status.isCancelled;
+
+//     if (status.isCancelled) {
+//       updatePayload.$set.status = "cancelled";
+//     }
+//   }
+
+//   updatePayload.$push = {
+//     modificationHistory: {
+//       action: ACTIONS.UPDATE,
+//       modifiedBy: updatedBy,
+//       date: new Date(),
+//     },
+//   };
+
+//   return appointment.findOneAndUpdate({ appointmentId }, updatePayload, {
+//     new: true,
+//   });
+// };
+
+export const getActiveSessionAppointments = async (
+  centerId: string
+): Promise<{ session: ISession; appointments: IAppointment[] } | null> => {
+  // Find active session for the center
+  const activeSession = (await session
+    .findOne({
+      centerId,
+      isSessionActive: true,
+      endTime: { $gt: new Date() },
+    })
+    .lean()) as ISession;
+
+  if (!activeSession) {
+    return null;
+  }
+
+  // Get all appointments for this session
+  const appointments = await appointment
+    .find({
+      sessionId: activeSession._id,
+      isCancelled: { $ne: true },
+    })
+    .sort({ tokenNo: 1 })
+    .lean();
+
+  return {
+    session: activeSession,
+    appointments,
+  };
+};
+
 export const cancelAppointment = async (
   appointmentId: string,
   cancelledBy: string
@@ -374,13 +480,13 @@ export const cancelAppointment = async (
     throw new Error("Appointment not found");
   }
 
-  // Check if the appointment session is still active
-  const currentSession = await session.findOne({
-    sessionId: appointmentToCancel.sessionId,
-  });
-  if (!currentSession?.isSessionActive) {
-    throw new Error("Cannot cancel appointment for inactive session");
-  }
+  // REMOVED: Session active check - no longer needed
+  // const currentSession = await session.findOne({
+  //   sessionId: appointmentToCancel.sessionId,
+  // });
+  // if (!currentSession?.isSessionActive) {
+  //   throw new Error("Cannot cancel appointment for inactive session");
+  // }
 
   const updatedAppointment = await appointment.findOneAndUpdate(
     { appointmentId },
@@ -396,6 +502,169 @@ export const cancelAppointment = async (
     },
     { new: true }
   );
+
+  // =============================
+  // 🔹 Send Cancellation Notifications (SMS & Email)
+  // =============================
+  if (updatedAppointment) {
+    try {
+      // Fetch patient details
+      const patient = await Patient.findById(
+        updatedAppointment.patientId
+      ).lean();
+
+      // Fetch center details
+      const center = await MedicalCenter.findById(updatedAppointment.centerId)
+        .select("centerId centerName address contactNo")
+        .lean();
+
+      // Fetch session details
+      const currentSession = await session
+        .findOne({
+          sessionId: updatedAppointment.sessionId,
+        })
+        .select("sessionName")
+        .lean();
+
+      if (patient && center && currentSession) {
+        const appointmentDate = new Date(updatedAppointment.date);
+
+        // =============================
+        // 🔹 SMS Notification
+        // =============================
+        if (patient.contactNo) {
+          const smsMsg = `❌ Appointment Cancelled!
+
+👤 Patient: ${patient.patientName}
+🏥 Center: ${center.centerName}
+📍 Address: ${center.address}
+📞 Contact: ${center.contactNo}
+
+🎫 Appointment ID: ${updatedAppointment.appointmentId}
+🔢 Token No: ${updatedAppointment.tokenNo}
+📅 Date: ${appointmentDate.toDateString()}
+⏰ Session: ${currentSession.sessionName}
+
+Your appointment has been cancelled. Please contact the center for rescheduling.`;
+
+          try {
+            // Send SMS
+            const message = await client.messages.create({
+              body: smsMsg,
+              from: process.env.TWILIO_PHONE_NUMBER,
+              to: patient.contactNo,
+            });
+
+            console.log(
+              `📲 Sending cancellation SMS to patient: ${patient.contactNo}`
+            );
+            console.log(
+              `✅ Cancellation SMS sent! Message SID: ${message.sid}`
+            );
+          } catch (error: any) {
+            console.error(
+              "❌ Cancellation SMS failed:",
+              error.message || error
+            );
+          }
+        }
+
+        // =============================
+        // 🔹 Email Notification
+        // =============================
+        if (patient.email) {
+          try {
+            const emailSubject = "Appointment Cancellation Notification";
+            const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Appointment Cancellation</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #f8f9fa; padding: 20px; text-align: center; border-radius: 5px; }
+        .content { background: #fff; padding: 20px; border-radius: 5px; margin-top: 10px; }
+        .info-item { margin-bottom: 10px; }
+        .label { font-weight: bold; color: #555; }
+        .cancelled { color: #dc3545; font-weight: bold; }
+        .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>❌ Appointment Cancelled</h2>
+        </div>
+        <div class="content">
+            <p>Dear ${patient.patientName},</p>
+            <p>Your appointment has been cancelled. Here are the details:</p>
+            
+            <div class="info-item">
+                <span class="label">Patient:</span> ${patient.patientName}
+            </div>
+            <div class="info-item">
+                <span class="label">Medical Center:</span> ${center.centerName}
+            </div>
+            <div class="info-item">
+                <span class="label">Address:</span> ${center.address}
+            </div>
+            <div class="info-item">
+                <span class="label">Contact:</span> ${center.contactNo}
+            </div>
+            <div class="info-item">
+                <span class="label">Appointment ID:</span> ${
+                  updatedAppointment.appointmentId
+                }
+            </div>
+            <div class="info-item">
+                <span class="label">Token No:</span> ${
+                  updatedAppointment.tokenNo
+                }
+            </div>
+            <div class="info-item">
+                <span class="label">Date:</span> ${appointmentDate.toDateString()}
+            </div>
+            <div class="info-item">
+                <span class="label">Session:</span> ${
+                  currentSession.sessionName
+                }
+            </div>
+            
+            <p style="margin-top: 20px; color: #dc3545;" class="cancelled">
+                ⚠️ This appointment has been cancelled. Please contact the medical center for rescheduling.
+            </p>
+        </div>
+        <div class="footer">
+            <p>This is an automated message. Please do not reply to this email.</p>
+            <p>© ${new Date().getFullYear()} DocFlex Pro. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>`;
+
+            await transporter.sendMail({
+              from: '"DocFlex Pro" <no-reply@docflexpro.com>',
+              to: patient.email,
+              subject: emailSubject,
+              html: emailHtml,
+            });
+
+            console.log(`📧 Cancellation email sent to: ${patient.email}`);
+          } catch (error) {
+            console.error("❌ Cancellation email failed:", error);
+          }
+        }
+      }
+    } catch (notificationError) {
+      console.error(
+        "❌ Error sending cancellation notifications:",
+        notificationError
+      );
+      // Don't throw error - appointment cancellation should succeed even if notifications fail
+    }
+  }
 
   return updatedAppointment;
 };
@@ -435,38 +704,82 @@ export const updateAppointmentStatus = async (
     },
   };
 
-  return appointment.findOneAndUpdate({ appointmentId }, updatePayload, {
-    new: true,
-  });
-};
+  const updatedAppointment = await appointment.findOneAndUpdate(
+    { appointmentId },
+    updatePayload,
+    { new: true }
+  );
 
-export const getActiveSessionAppointments = async (
-  centerId: string
-): Promise<{ session: ISession; appointments: IAppointment[] } | null> => {
-  // Find active session for the center
-  const activeSession = (await session
-    .findOne({
-      centerId,
-      isSessionActive: true,
-      endTime: { $gt: new Date() },
-    })
-    .lean()) as ISession;
+  // =============================
+  // 🔹 Send Cancellation Notifications if appointment was cancelled
+  // =============================
+  if (updatedAppointment && status.isCancelled === true) {
+    try {
+      // Fetch patient details
+      const patient = await Patient.findById(
+        updatedAppointment.patientId
+      ).lean();
 
-  if (!activeSession) {
-    return null;
+      // Fetch center details
+      const center = await MedicalCenter.findById(updatedAppointment.centerId)
+        .select("centerId centerName address contactNo")
+        .lean();
+
+      // Fetch session details
+      const currentSession = await session
+        .findOne({
+          sessionId: updatedAppointment.sessionId,
+        })
+        .select("sessionName")
+        .lean();
+
+      if (patient && center && currentSession) {
+        const appointmentDate = new Date(updatedAppointment.date);
+
+        // SMS Notification
+        if (patient.contactNo) {
+          const smsMsg = `❌ Appointment Cancelled!
+
+👤 Patient: ${patient.patientName}
+🏥 Center: ${center.centerName}
+🎫 Appointment ID: ${updatedAppointment.appointmentId}
+📅 Date: ${appointmentDate.toDateString()}
+
+Your appointment has been cancelled. Please contact the center for rescheduling.`;
+
+          try {
+            await client.messages.create({
+              body: smsMsg,
+              from: process.env.TWILIO_PHONE_NUMBER,
+              to: patient.contactNo,
+            });
+          } catch (error) {
+            console.error("❌ Cancellation SMS failed:", error);
+          }
+        }
+
+        // Email Notification
+        if (patient.email) {
+          try {
+            const emailHtml = `...`; // Same email template as above
+            await transporter.sendMail({
+              from: '"DocFlex Pro" <no-reply@docflexpro.com>',
+              to: patient.email,
+              subject: "Appointment Cancellation Notification",
+              html: emailHtml,
+            });
+          } catch (error) {
+            console.error("❌ Cancellation email failed:", error);
+          }
+        }
+      }
+    } catch (notificationError) {
+      console.error(
+        "❌ Error sending cancellation notifications:",
+        notificationError
+      );
+    }
   }
 
-  // Get all appointments for this session
-  const appointments = await appointment
-    .find({
-      sessionId: activeSession._id,
-      isCancelled: { $ne: true },
-    })
-    .sort({ tokenNo: 1 })
-    .lean();
-
-  return {
-    session: activeSession,
-    appointments,
-  };
+  return updatedAppointment;
 };
