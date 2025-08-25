@@ -38,7 +38,7 @@ router.delete(
 router.put(
   "/:id",
   checkPermission(PERMISSIONS.GENERICNAME_MANAGEMENT),
-  validate(GenericNameSchema), 
+  validate(GenericNameSchema),
   genericNameController.updateGenericById
 );
 

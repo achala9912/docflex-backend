@@ -1,24 +1,43 @@
 import GenericName from "../models/generic-name.model";
+import MedicalCenter from "../models/medicalCenter.model";
 import { IGenericName } from "../interfaces/generic-name.interface";
 import { ACTIONS } from "../constants/modification-history.constant";
 
 export const createGenericName = async (
   genericNameData: string,
+  centerId: string,
   createdBy: string
 ): Promise<IGenericName> => {
-  const lastRecord = await GenericName.findOne()
-    .sort({ genericId: -1 })
-    .limit(1);
 
-  const lastNumber = lastRecord
-    ? parseInt(lastRecord.genericId.replace("GEN", ""))
-    : 0;
+  const center = await MedicalCenter.findById(centerId).lean();
+  if (!center) {
+    throw new Error("Medical center not found");
+  }
 
-  const genericId = `GEN${(lastNumber + 1).toString().padStart(4, "0")}`;
+  const centerCode = center.centerId;
+
+
+  const lastRecord = await GenericName.findOne({ centerId })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  let lastNumber = 0;
+  if (lastRecord) {
+    const match = lastRecord.genericId.match(/GEN(\d+)$/);
+    if (match) {
+      lastNumber = parseInt(match[1], 10);
+    }
+  }
+
+
+  const newNumber = lastNumber + 1;
+  const genericId = `${centerCode}-GEN${newNumber.toString().padStart(3, "0")}`;
+
 
   const newGenericName = new GenericName({
     genericName: genericNameData,
     genericId,
+    centerId, 
     modificationHistory: [
       {
         action: ACTIONS.CREATE,
@@ -31,12 +50,14 @@ export const createGenericName = async (
   return await newGenericName.save();
 };
 
+
 export const getAllGenericNames = async (params: {
   page?: number;
   limit?: number;
   search?: string;
+  centerId?: string;
 }) => {
-  const { page = 1, limit = 10, search = "" } = params;
+  const { page = 1, limit = 10, search = "", centerId } = params;
   const skip = (page - 1) * limit;
 
   const query: any = { isDeleted: false };
@@ -46,11 +67,16 @@ export const getAllGenericNames = async (params: {
     query.genericName = searchRegex;
   }
 
+  if (centerId) {
+    query.centerId = centerId;
+  }
+
   const [genericNames, total] = await Promise.all([
     GenericName.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
+      .populate("centerId", "centerId centerName")
       .lean(),
     GenericName.countDocuments(query),
   ]);
@@ -64,14 +90,19 @@ export const getAllGenericNames = async (params: {
   };
 };
 
+
 export const getGenericById = async (genericId: string) => {
   const generic = await GenericName.findOne({
     genericId,
     isDeleted: false,
-  }).lean();
+  })
+    .populate("centerId", "centerId centerName")
+    .lean();
+
   if (!generic) throw new Error("Generic name not found");
   return generic;
 };
+
 
 export const deleteGenericById = async (
   genericId: string,
@@ -95,6 +126,7 @@ export const deleteGenericById = async (
   if (!deleted) throw new Error("Generic name not found");
   return deleted;
 };
+
 
 export const updateGenericById = async (
   genericId: string,

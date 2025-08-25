@@ -6,7 +6,10 @@ import Appointment from "../models/appointment.model";
 import Patient from "../models/patient.model";
 import twilio from "twilio";
 import nodemailer from "nodemailer";
-import { sessionActivationTemplate, sessionDeactivationTemplate } from "../utils/otpEmailTemplates";
+import {
+  sessionActivationTemplate,
+  sessionDeactivationTemplate,
+} from "../utils/otpEmailTemplates";
 
 // Initialize Twilio client (if not already done)
 const client = twilio(process.env.TWILIO_SID!, process.env.TWILIO_AUTH_TOKEN!);

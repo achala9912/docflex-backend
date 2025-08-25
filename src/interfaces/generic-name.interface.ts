@@ -1,4 +1,5 @@
-import { Document } from "mongoose";
+import { Document, Types } from "mongoose";
+import { IMedicalCenter } from "./medicalCenter.interface";
 
 export interface IModification {
   action?: string | null;
@@ -8,6 +9,7 @@ export interface IModification {
 
 export interface IGenericName extends Document {
   genericId: string;
+  centerId: Types.ObjectId | IMedicalCenter;
   genericName: string;
   isDeleted: boolean;
   createdAt: Date;

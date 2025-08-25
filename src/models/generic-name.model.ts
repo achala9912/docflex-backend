@@ -6,6 +6,11 @@ const GenericNameSchema = new Schema<IGenericName>(
   {
     genericId: { type: String, required: true, unique: true },
     genericName: { type: String, required: true, unique: true },
+    centerId: {
+      type: Schema.Types.ObjectId,
+      ref: "MedicalCenter",
+      required: true,
+    },
     isDeleted: { type: Boolean, default: false },
     modificationHistory: [
       {

@@ -8,15 +8,18 @@ export const createGenericName = async (
 ): Promise<void> => {
   try {
     const createdBy = req.tokenData?.userId || "system";
-    const { genericName } = req.body;
+    const { genericName, centerId } = req.body;
 
-    if (!genericName) {
-      res.status(400).json({ message: "genericName is required" });
+    if (!genericName || !centerId) {
+      res
+        .status(400)
+        .json({ message: "genericName and centerId are required" });
       return;
     }
 
     const newGenericName = await genericNameService.createGenericName(
       genericName,
+      centerId,
       createdBy
     );
 
@@ -32,11 +35,12 @@ export const getAllGenericNames = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { page = 1, limit = 10, search = "" } = req.query;
+    const { page = 1, limit = 10, search = "", centerId } = req.query;
     const result = await genericNameService.getAllGenericNames({
       page: Number(page),
       limit: Number(limit),
       search: String(search),
+      centerId: centerId ? String(centerId) : undefined,
     });
     res.json(result);
   } catch (error) {
@@ -57,6 +61,7 @@ export const getGenericById = async (
   }
 };
 
+
 export const deleteGenericById = async (
   req: Request,
   res: Response,
@@ -73,6 +78,7 @@ export const deleteGenericById = async (
     next(error);
   }
 };
+
 
 export const updateGenericById = async (
   req: Request,
