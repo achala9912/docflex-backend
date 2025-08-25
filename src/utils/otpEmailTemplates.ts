@@ -339,3 +339,107 @@ export const appointmentCancellationTemplate = (
 </body>
 </html>
 `;
+
+
+
+
+export const sessionActivationTemplate = (
+  patientName: string,
+  centerName: string,
+  centerAddress: string,
+  centerContact: string,
+  sessionName: string,
+  appointmentDate: string
+) => {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #4CAF50; color: white; padding: 10px; text-align: center; }
+        .content { padding: 20px; background-color: #f9f9f9; }
+        .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #777; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h2>Session Started Notification</h2>
+        </div>
+        <div class="content">
+          <p>Dear ${patientName},</p>
+          <p>The medical session has now started. The doctor has arrived and is ready to see patients.</p>
+          <p><strong>Session Details:</strong></p>
+          <ul>
+            <li><strong>Medical Center:</strong> ${centerName}</li>
+            <li><strong>Address:</strong> ${centerAddress}</li>
+            <li><strong>Contact:</strong> ${centerContact}</li>
+            <li><strong>Session:</strong> ${sessionName}</li>
+            <li><strong>Appointment Date:</strong> ${appointmentDate}</li>
+          </ul>
+          <p>Please proceed to the center at your scheduled time.</p>
+          <p>Thank you for choosing our services.</p>
+        </div>
+        <div class="footer">
+          <p>This is an automated message. Please do not reply to this email.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+};
+
+
+
+// Email template for session deactivation notification
+export const sessionDeactivationTemplate = (
+  patientName: string,
+  centerName: string,
+  centerAddress: string,
+  centerContact: string,
+  sessionName: string,
+  appointmentDate: string
+) => {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #f44336; color: white; padding: 10px; text-align: center; }
+        .content { padding: 20px; background-color: #f9f9f9; }
+        .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #777; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h2>Session Ended Notification</h2>
+        </div>
+        <div class="content">
+          <p>Dear ${patientName},</p>
+          <p>The medical session has now ended. The doctor is no longer available for today.</p>
+          <p><strong>Session Details:</strong></p>
+          <ul>
+            <li><strong>Medical Center:</strong> ${centerName}</li>
+            <li><strong>Address:</strong> ${centerAddress}</li>
+            <li><strong>Contact:</strong> ${centerContact}</li>
+            <li><strong>Session:</strong> ${sessionName}</li>
+            <li><strong>Appointment Date:</strong> ${appointmentDate}</li>
+          </ul>
+          <p>If you missed your appointment, please contact the center to reschedule.</p>
+          <p>Thank you for choosing our services.</p>
+        </div>
+        <div class="footer">
+          <p>This is an automated message. Please do not reply to this email.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+};
