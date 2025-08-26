@@ -25,6 +25,8 @@ export const PERMISSIONS = {
 
   // Product permissions
   PRODUCT_MANAGEMENT: "product:management",
+  // Prescription permissions
+  PRESCRIPTION_MANAGEMENT: "prescription:management",
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

@@ -14,6 +14,7 @@ import v1SessionsRoutes from "./routes/v1/session.routes";
 import v1GenericRoutes from "./routes/v1/generic-name.routes";
 import v1AppointmentRoutes from "./routes/v1/appointment.route";
 import v1ProductRoutes from "./routes/v1/product.route";
+import v1PrescriptionRoutes from "./routes/v1/prescription.route";
 
 dotenv.config();
 
@@ -35,6 +36,7 @@ v1Router.use("/sessions", v1SessionsRoutes);
 v1Router.use("/generic", v1GenericRoutes);
 v1Router.use("/appointments", v1AppointmentRoutes);
 v1Router.use("/products", v1ProductRoutes);
+v1Router.use("/prescriptions", v1PrescriptionRoutes);
 
 // ✅ Mount versioned router
 app.use("/api/v1", v1Router);
@@ -49,6 +51,7 @@ app.use("/api/sessions", v1SessionsRoutes);
 app.use("/api/generic", v1GenericRoutes);
 app.use("/api/appointments", v1AppointmentRoutes);
 app.use("/api/products", v1ProductRoutes);
+app.use("/api/prescriptions", v1PrescriptionRoutes);
 
 // ✅ Global Error Handler (keep at bottom)
 app.use(errorHandler);

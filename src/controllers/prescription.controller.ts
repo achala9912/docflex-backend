@@ -1,0 +1,69 @@
+import { Request, Response } from "express";
+import * as prescriptionService from "../services/prescription.service";
+
+export const createPrescription = async (req: Request, res: Response) => {
+  try {
+    const createdBy = req.tokenData?.userId || "system";
+    const prescription = await prescriptionService.createPrescriptionService(
+      req.body,
+      createdBy
+    );
+    res.status(201).json(prescription);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getAllPrescriptions = async (req: Request, res: Response) => {
+  try {
+    const prescriptions = await prescriptionService.getAllPrescriptionsService(
+      req.query
+    );
+    res.json(prescriptions);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getPrescriptionById = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const prescription = await prescriptionService.getPrescriptionByIdService(
+      req.params.id
+    );
+    if (!prescription) {
+      res.status(404).json({ message: "Not found" });
+      return;
+    }
+    res.json(prescription);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updatePrescription = async (req: Request, res: Response) => {
+  try {
+    const updated = await prescriptionService.updatePrescriptionService(
+      req.params.id,
+      req.body,
+      req.tokenData?.userId || "system"
+    );
+    res.json(updated);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const cancelPrescription = async (req: Request, res: Response) => {
+  try {
+    const cancelled = await prescriptionService.cancelPrescriptionService(
+      req.params.id,
+      req.tokenData?.userId || "system"
+    );
+    res.json(cancelled);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
