@@ -3,6 +3,7 @@ import Appointment from "../models/appointment.model";
 import { ACTIONS } from "../constants/modification-history.constant";
 import { Types } from "mongoose";
 
+
 const generatePrescriptionNo = async (
   appointmentObjectId: string
 ): Promise<string> => {
@@ -10,7 +11,7 @@ const generatePrescriptionNo = async (
 
   if (!appointment) throw new Error("Appointment not found");
 
-  const appointmentCode = appointment.appointmentId; 
+  const appointmentCode = appointment.appointmentId;
   if (!appointmentCode) throw new Error("Appointment code missing");
 
   const count = await Prescription.countDocuments({
@@ -23,11 +24,12 @@ const generatePrescriptionNo = async (
 export const createPrescriptionService = async (data: any, userId: string) => {
   const prescriptionNo = await generatePrescriptionNo(data.appointmentId);
 
-  return await Prescription.create({
+  return Prescription.create({
     ...data,
     prescriptionNo,
+    createdBy: userId,
     modificationHistory: [
-      { action: "create", modifiedBy: userId, date: new Date() },
+      { action: ACTIONS.CREATE, modifiedBy: userId, date: new Date() },
     ],
   });
 };

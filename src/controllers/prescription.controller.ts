@@ -4,10 +4,12 @@ import * as prescriptionService from "../services/prescription.service";
 export const createPrescription = async (req: Request, res: Response) => {
   try {
     const createdBy = req.tokenData?.userId || "system";
+
     const prescription = await prescriptionService.createPrescriptionService(
       req.body,
       createdBy
     );
+
     res.status(201).json(prescription);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
