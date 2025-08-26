@@ -5,7 +5,7 @@ export const GenericNameSchema = z.object({
   genericName: z
     .string()
     .min(3, "Name must be at least 3 characters")
-    .max(50, "Name cannot exceed 50 characters"),
+    .max(70, "Name cannot exceed 70 characters"),
 });
 
 export const UpdateGenericNameSchema = GenericNameSchema.partial();

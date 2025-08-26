@@ -22,6 +22,9 @@ export const PERMISSIONS = {
   GENERICNAME_MANAGEMENT: "generic:management",
   // Appointment permissions
   APPOINTMENT_MANAGEMENT: "appointment:management",
+
+  // Product permissions
+  PRODUCT_MANAGEMENT: "product:management",
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
