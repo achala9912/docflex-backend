@@ -1,19 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import * as sessionService from "../services/session.service";
 
-// export const createSession = async (
-//   req: Request,
-//   res: Response,
-//   next: NextFunction
-// ): Promise<void> => {
-//   try {
-//     const createdBy = req.tokenData?.userId || "system";
-//     const session = await sessionService.createSession(req.body, createdBy);
-//     res.status(201).json(session);
-//   } catch (error) {
-//     next(error);
-//   }
-// };
+
 export const createSession = async (
   req: Request,
   res: Response,
