@@ -281,7 +281,8 @@ export const getAllAppointments = async (params: {
   if (!includeDeleted) match.isDeleted = { $ne: true };
   if (sessionId) match.sessionId = sessionId;
 
-  const queryDate = date;
+  // Handle date filter
+  const queryDate = date || new Date().toISOString().split("T")[0]; 
   const startDate = new Date(`${queryDate}T00:00:00.000Z`);
   const endDate = new Date(`${queryDate}T23:59:59.999Z`);
   match.date = { $gte: startDate, $lte: endDate };
@@ -290,6 +291,8 @@ export const getAllAppointments = async (params: {
 
   const pipeline: any[] = [
     { $match: match },
+
+    // Lookup patient
     {
       $lookup: {
         from: "patients",
@@ -299,6 +302,17 @@ export const getAllAppointments = async (params: {
       },
     },
     { $unwind: "$patient" },
+
+    // Lookup center
+    {
+      $lookup: {
+        from: "medicalcenters", 
+        localField: "centerId",
+        foreignField: "_id",
+        as: "center",
+      },
+    },
+    { $unwind: "$center" },
   ];
 
   // Search filter
@@ -340,9 +354,11 @@ export const getAllAppointments = async (params: {
   const sessionMap = new Map<string, ISession>();
   sessions.forEach((s) => sessionMap.set(String(s.sessionId), s));
 
+  // Map final data with session and centerName
   const data = rawAppointments.map((a) => ({
     ...a,
     sessionId: sessionMap.get(String(a.sessionId)) || null,
+ 
   }));
 
   return {
