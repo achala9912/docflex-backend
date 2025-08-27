@@ -14,7 +14,7 @@ const PatientSchema = new Schema<IPatient>(
       default: GENDERS.MALE,
     },
     dob: { type: Date, required: true },
-    age: { type: Number, required: true },
+    age: { type: String, required: true },
     centerId: {
       type: Schema.Types.ObjectId,
       ref: "MedicalCenter",

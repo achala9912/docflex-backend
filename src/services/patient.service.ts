@@ -3,15 +3,31 @@ import { IPatient } from "../interfaces/patient.interface";
 import { ACTIONS } from "../constants/modification-history.constant";
 import MedicalCenter from "../models/medicalCenter.model";
 
-const calculateAge = (dob: Date): number => {
+// ✅ Updated age calculation (returns string like "25Y", "5M", "12D")
+const calculateAge = (dob: Date): string => {
   const today = new Date();
-  let age = today.getFullYear() - dob.getFullYear();
-  const monthDiff = today.getMonth() - dob.getMonth();
 
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
-    age--;
+  let years = today.getFullYear() - dob.getFullYear();
+  let months = today.getMonth() - dob.getMonth();
+  let days = today.getDate() - dob.getDate();
+
+  if (days < 0) {
+    months -= 1;
+    days += new Date(today.getFullYear(), today.getMonth(), 0).getDate();
   }
-  return age;
+
+  if (months < 0) {
+    years -= 1;
+    months += 12;
+  }
+
+  if (years > 0) {
+    return `${years}Y`;
+  } else if (months > 0) {
+    return `${months}M`;
+  } else {
+    return `${days}D`;
+  }
 };
 
 export const createPatient = async (
@@ -31,20 +47,20 @@ export const createPatient = async (
     .limit(1);
 
   // Generate the patient ID
-  const centerCode = center.centerId; // "MC001" format
+  const centerCode = center.centerId;
   const lastNumber = lastPatient
     ? parseInt(lastPatient.patientId.split("-PAT")[1])
     : 0;
   const patientId = `${centerCode}-PAT${lastNumber + 1}`;
 
-  // Calculate age
+  // ✅ Calculate formatted age
   const age = calculateAge(new Date(patientData.dob));
 
   // Create and save patient
   const patient = new Patient({
     ...patientData,
     patientId,
-    age,
+    age, // 👈 now stored as "25Y", "5M", "12D"
     modificationHistory: [
       {
         action: ACTIONS.CREATE,
@@ -56,7 +72,6 @@ export const createPatient = async (
 
   const savedPatient = await patient.save();
 
-  // Get the populated patient document
   const populatedPatient = await Patient.findById(savedPatient._id)
     .populate("centerId", "centerId centerName")
     .orFail()
@@ -76,7 +91,6 @@ export const updatePatient = async (
   const changes: Record<string, { from: any; to: any }> = {};
   const original = patient.toObject();
 
-  // Track changes
   Object.keys(updateData).forEach((key) => {
     if (updateData[key as keyof IPatient] !== original[key as keyof IPatient]) {
       changes[key] = {
@@ -87,7 +101,7 @@ export const updatePatient = async (
     }
   });
 
-  // Update age if DOB changed
+  // ✅ Update age if DOB changed
   if (updateData.dob) {
     patient.age = calculateAge(new Date(updateData.dob));
     changes.age = {

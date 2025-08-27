@@ -14,7 +14,7 @@ export interface IPatient extends Document {
   patientName: string;
   gender?: (typeof GENDERS)[keyof typeof GENDERS];
   dob: Date;
-  age: number;
+  age: number | string;
   centerId: Types.ObjectId | IMedicalCenter;
   contactNo: string;
   address: string;
