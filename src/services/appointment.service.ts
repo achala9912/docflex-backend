@@ -11,6 +11,7 @@ import {
   appointmentCancellationTemplate,
   appointmentConfirmationTemplate,
 } from "../utils/otpEmailTemplates";
+import { Types } from "mongoose";
 
 const client = twilio(process.env.TWILIO_SID!, process.env.TWILIO_AUTH_TOKEN!);
 
@@ -273,86 +274,84 @@ export const getAllAppointments = async (params: {
     includeDeleted = false,
   } = params;
 
-  const query: any = {};
   let debugInfo: any = {};
 
-  // 🔹 Search filter
-  if (search) {
-    query.$or = [
-      { appointmentId: { $regex: search, $options: "i" } },
-      { patientName: { $regex: search, $options: "i" } },
-    ];
-  }
-
-  if (centerId) query.centerId = centerId;
+  // Build match conditions
+  const match: any = {};
+  if (centerId) match.centerId = new Types.ObjectId(centerId);
   if (typeof isPatientvisited === "boolean")
-    query.isPatientvisited = isPatientvisited;
-  if (!includeDeleted) query.isDeleted = { $ne: true };
-  if (sessionId) query.sessionId = sessionId;
+    match.isPatientvisited = isPatientvisited;
+  if (!includeDeleted) match.isDeleted = { $ne: true };
+  if (sessionId) match.sessionId = sessionId;
 
+  // Date filter
   if (date) {
-    // Add debug info
-    debugInfo.inputDate = date;
-
-    // date filtering (with UTC conversion)
     const [year, month, day] = date.split("-").map(Number);
-    debugInfo.parsedDate = { year, month, day };
-
     const startDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
-    startDate.setMinutes(startDate.getMinutes() - 330); // Sri Lanka UTC offset
+    startDate.setMinutes(startDate.getMinutes() - 330); // adjust SL offset
 
     const endDate = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
     endDate.setMinutes(endDate.getMinutes() - 330);
 
-    debugInfo.dateRange = {
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
-      startDateLocal: startDate.toString(),
-      endDateLocal: endDate.toString(),
-    };
+    match.date = { $gte: startDate, $lte: endDate };
 
-    query.date = { $gte: startDate, $lte: endDate };
+    debugInfo.dateRange = { startDate, endDate };
   }
 
-  debugInfo.finalQuery = JSON.stringify(query, null, 2);
+  // Build pipeline
+  const pipeline: any[] = [
+    { $match: match },
+    {
+      $lookup: {
+        from: "patients",
+        localField: "patientId",
+        foreignField: "_id",
+        as: "patient",
+      },
+    },
+    { $unwind: "$patient" },
+  ];
 
-  // 🔹 Count total documents
-  const total = await appointment.countDocuments(query);
+  // Search filter
+  if (search) {
+    pipeline.push({
+      $match: {
+        $or: [
+          { appointmentId: { $regex: search, $options: "i" } },
+          { "patient.patientName": { $regex: search, $options: "i" } },
+          { "patient.contactNo": { $regex: search, $options: "i" } },
+          { "patient.nic": { $regex: search, $options: "i" } },
+        ],
+      },
+    });
+  }
 
-  // 🔹 Fetch appointments with center and patient info
-  const rawAppointments = await appointment
-    .find(query)
-    .populate("centerId", "centerId centerName")
-    .populate(
-      "patientId",
-      "patientId patientName age email contactNo address nic remark gender"
-    )
-    .sort({ date: -1, tokenNo: -1 })
-    .skip((page - 1) * limit)
-    .limit(limit)
-    .lean();
+  // Count total
+  const countPipeline = [...pipeline, { $count: "total" }];
+  const totalResult = await appointment.aggregate(countPipeline);
+  const total = totalResult[0]?.total || 0;
 
-  // Add debug info about found appointments
-  debugInfo.foundAppointments = rawAppointments.map((a) => ({
-    appointmentId: a.appointmentId,
-    date: a.date,
-    dateString: new Date(a.date).toISOString(),
-  }));
+  // Apply sort + pagination
+  pipeline.push(
+    { $sort: { date: -1, tokenNo: -1 } },
+    { $skip: (page - 1) * limit },
+    { $limit: limit }
+  );
 
-  // 🔹 Fetch all session details in bulk
+  // Fetch data
+  const rawAppointments = await appointment.aggregate(pipeline);
+
+  // Fetch related sessions
   const sessionIds = rawAppointments.map((a) => a.sessionId);
   const sessions = await session
     .find({ sessionId: { $in: sessionIds }, isDeleted: { $ne: true } })
     .select("sessionId sessionName startTime endTime isSessionActive")
     .lean();
 
-  // 🔹 Map sessionId → session object
   const sessionMap = new Map<string, ISession>();
-  sessions.forEach((s) => {
-    sessionMap.set(String(s.sessionId), s);
-  });
+  sessions.forEach((s) => sessionMap.set(String(s.sessionId), s));
 
-  // 🔹 Merge session details into appointments
+  // Merge session details
   const data = rawAppointments.map((a) => ({
     ...a,
     sessionId: sessionMap.get(String(a.sessionId)) || null,
@@ -709,17 +708,13 @@ Your appointment has been cancelled. Please contact the center for rescheduling.
   return updatedAppointment;
 };
 
-
-
-export const getActiveSessionPatientVisitedAppointment = async (
-  params: {
-    date?: string;
-    centerId: string;
-    search?: string;
-    page?: number;
-    limit?: number;
-  }
-): Promise<{
+export const getActiveSessionPatientVisitedAppointment = async (params: {
+  date?: string;
+  centerId: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+}): Promise<{
   data: IAppointment[];
   total: number;
   totalPages: number;
@@ -746,22 +741,23 @@ export const getActiveSessionPatientVisitedAppointment = async (
     query.date = { $gte: startDate, $lte: endDate };
   }
 
-  // ✅ Search by appointmentId, patientName, sessionId
   if (search) {
     query.$or = [
       { appointmentId: { $regex: search, $options: "i" } },
       { sessionId: { $regex: search, $options: "i" } },
-      { patientName: { $regex: search, $options: "i" } }, // if stored in appointment
+      { patientName: { $regex: search, $options: "i" } },
     ];
   }
 
   // ✅ Get active session
-  const activeSession = await session.findOne({
-    centerId,
-    isSessionActive: true,
-    endTime: { $gt: new Date() },
-    isDeleted: { $ne: true },
-  }).lean();
+  const activeSession = await session
+    .findOne({
+      centerId,
+      isSessionActive: true,
+      endTime: { $gt: new Date() },
+      isDeleted: { $ne: true },
+    })
+    .lean();
 
   if (!activeSession) {
     return {
