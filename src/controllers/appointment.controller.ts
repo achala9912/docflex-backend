@@ -240,3 +240,44 @@ export const markAsVisitedHandler = async (
     });
   }
 };
+
+export const getActiveSessionPatientVisitedAppointmentHandler = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { date, search, page, limit, centerId } = req.query;
+
+    if (!centerId) {
+      res.status(400).json({
+        success: false,
+        message: "centerId is required",
+      });
+      return;
+    }
+
+    const result =
+      await AppointmentService.getActiveSessionPatientVisitedAppointment({
+        date: date as string,
+        centerId: centerId as string,
+        search: search as string,
+        page: parseInt(page as string) || 1,
+        limit: parseInt(limit as string) || 10,
+      });
+
+    // ✅ Always success, even if result.data = []
+    res.status(200).json({
+      success: true,
+      data: result.data,
+      total: result.total,
+      totalPages: result.totalPages,
+      currentPage: result.currentPage,
+      limit: result.limit,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

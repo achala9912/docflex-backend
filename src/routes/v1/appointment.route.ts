@@ -22,18 +22,18 @@ router.post(
   appointmentController.createAppointmentHandler
 );
 
-// Get single appointment
-router.get(
-  "/:id",
-  checkPermission(PERMISSIONS.APPOINTMENT_MANAGEMENT),
-  appointmentController.getAppointmentHandler
-);
-
 // Get all appointments (with pagination and filters)
 router.get(
   "/",
   checkPermission(PERMISSIONS.APPOINTMENT_MANAGEMENT),
   appointmentController.getAllAppointmentsHandler
+);
+
+// ✅ MOVED: Specific routes BEFORE parameterized routes
+router.get(
+  "/visited-appointments",
+  checkPermission(PERMISSIONS.APPOINTMENT_MANAGEMENT),
+  appointmentController.getActiveSessionPatientVisitedAppointmentHandler
 );
 
 // Get appointments for specific session
@@ -48,6 +48,14 @@ router.get(
   "/center/:centerId/active",
   checkPermission(PERMISSIONS.APPOINTMENT_MANAGEMENT),
   appointmentController.getActiveSessionAppointmentsHandler
+);
+
+// ✅ MOVED: Parameterized routes AFTER specific routes
+// Get single appointment
+router.get(
+  "/:id",
+  checkPermission(PERMISSIONS.APPOINTMENT_MANAGEMENT),
+  appointmentController.getAppointmentHandler
 );
 
 // Cancel appointment

@@ -708,3 +708,94 @@ Your appointment has been cancelled. Please contact the center for rescheduling.
 
   return updatedAppointment;
 };
+
+
+
+export const getActiveSessionPatientVisitedAppointment = async (
+  params: {
+    date?: string;
+    centerId: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }
+): Promise<{
+  data: IAppointment[];
+  total: number;
+  totalPages: number;
+  currentPage: number;
+  limit: number;
+}> => {
+  const { date, centerId, search, page = 1, limit = 10 } = params;
+
+  const query: any = {
+    centerId,
+    isPatientvisited: true,
+    isDeleted: { $ne: true },
+  };
+
+  // ✅ Handle date filter
+  if (date) {
+    const [year, month, day] = date.split("-").map(Number);
+    const startDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+    startDate.setMinutes(startDate.getMinutes() - 330); // adjust to IST
+
+    const endDate = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
+    endDate.setMinutes(endDate.getMinutes() - 330);
+
+    query.date = { $gte: startDate, $lte: endDate };
+  }
+
+  // ✅ Search by appointmentId, patientName, sessionId
+  if (search) {
+    query.$or = [
+      { appointmentId: { $regex: search, $options: "i" } },
+      { sessionId: { $regex: search, $options: "i" } },
+      { patientName: { $regex: search, $options: "i" } }, // if stored in appointment
+    ];
+  }
+
+  // ✅ Get active session
+  const activeSession = await session.findOne({
+    centerId,
+    isSessionActive: true,
+    endTime: { $gt: new Date() },
+    isDeleted: { $ne: true },
+  }).lean();
+
+  if (!activeSession) {
+    return {
+      data: [],
+      total: 0,
+      totalPages: 0,
+      currentPage: page,
+      limit,
+    };
+  }
+
+  query.sessionId = activeSession.sessionId;
+
+  // ✅ Count total
+  const total = await appointment.countDocuments(query);
+
+  // ✅ Fetch with pagination
+  const rawAppointments = await appointment
+    .find(query)
+    .populate("centerId", "centerId centerName")
+    .populate(
+      "patientId",
+      "patientId patientName age email contactNo address nic remark gender"
+    )
+    .sort({ tokenNo: 1 })
+    .skip((page - 1) * limit)
+    .limit(limit)
+    .lean();
+
+  return {
+    data: rawAppointments,
+    total,
+    totalPages: Math.ceil(total / limit),
+    currentPage: page,
+    limit,
+  };
+};
