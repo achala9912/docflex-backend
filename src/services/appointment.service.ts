@@ -784,7 +784,7 @@ export const getActiveSessionPatientVisitedAppointment = async (params: {
     .populate("centerId", "centerId centerName")
     .populate(
       "patientId",
-      "patientId patientName age email contactNo address nic remark gender"
+      "patientId patientName age email contactNo address nic remark gender title"
     )
     .sort({ tokenNo: 1 })
     .skip((page - 1) * limit)
