@@ -20,7 +20,34 @@ const generatePrescriptionNo = async (
   return `${appointmentCode}-P${count + 1}`;
 };
 
+// export const createPrescriptionService = async (data: any, userId: string) => {
+//   const prescriptionNo = await generatePrescriptionNo(data.appointmentId);
+
+//   return Prescription.create({
+//     ...data,
+//     prescriptionNo,
+//     createdBy: userId,
+//     modificationHistory: [
+//       { action: ACTIONS.CREATE, modifiedBy: userId, date: new Date() },
+//     ],
+//   });
+// };
+
 export const createPrescriptionService = async (data: any, userId: string) => {
+  // Check if the appointment exists and patient has visited
+  const appointment = await Appointment.findById(data.appointmentId);
+
+  if (!appointment) {
+    throw new Error("Appointment not found");
+  }
+
+  // Check if patient has visited (using both status and isPatientvisited field)
+  const hasVisited = appointment.isPatientvisited === true;
+
+  if (!hasVisited) {
+    throw new Error("Cannot create prescription - patient has not visited yet");
+  }
+
   const prescriptionNo = await generatePrescriptionNo(data.appointmentId);
 
   return Prescription.create({
