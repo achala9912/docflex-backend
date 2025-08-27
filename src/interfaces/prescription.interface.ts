@@ -35,6 +35,14 @@ export interface IPrescription extends Document {
     duration: string;
     note?: string;
   }>;
+  prescriberDetails: {
+    digitalSignature: string;
+    slmcNo: string;
+    title: string;
+    name: string;
+    specialization: string;
+    remarks: string;
+  };
   remark?: string;
   status: string;
   isDeleted: boolean;

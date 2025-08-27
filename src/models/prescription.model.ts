@@ -44,6 +44,14 @@ const PrescriptionSchema = new Schema<IPrescription>(
     remark: String,
     status: { type: String, default: "completed" },
     isDeleted: { type: Boolean, default: false },
+    prescriberDetails: {
+      digitalSignature: { type: String, required: true },
+      slmcNo: { type: String, required: true },
+      title: { type: String, required: true },
+      name: { type: String, required: true },
+      specialization: { type: String, required: true },
+      remarks: { type: String },
+    },
     modificationHistory: [
       {
         action: { type: String, enum: Object.values(ACTIONS) },
