@@ -11,9 +11,7 @@ import validate from "../../middlewares/validate.middleware";
 
 const router = express.Router();
 
-
 router.use(authMiddleware);
-
 
 router.post(
   "/",
@@ -28,24 +26,24 @@ router.get(
   prescriptionController.getAllPrescriptions
 );
 
-
+// Change :id to :prescriptionNo
 router.get(
-  "/:id",
+  "/:prescriptionNo",
   checkPermission(PERMISSIONS.PRESCRIPTION_MANAGEMENT),
   prescriptionController.getPrescriptionById
 );
 
-
+// Change :id to :prescriptionNo
 router.put(
-  "/:id",
+  "/:prescriptionNo",
   checkPermission(PERMISSIONS.PRESCRIPTION_MANAGEMENT),
   validate(UpdatePrescriptionSchema),
   prescriptionController.updatePrescription
 );
 
-
+// Change :id to :prescriptionNo
 router.delete(
-  "/:id/cancel",
+  "/:prescriptionNo/cancel",
   checkPermission(PERMISSIONS.PRESCRIPTION_MANAGEMENT),
   prescriptionController.cancelPrescription
 );

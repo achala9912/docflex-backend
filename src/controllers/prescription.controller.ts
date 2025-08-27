@@ -27,16 +27,15 @@ export const getAllPrescriptions = async (req: Request, res: Response) => {
   }
 };
 
-export const getPrescriptionById = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const getPrescriptionById = async (req: Request, res: Response) => {
   try {
+    const { prescriptionNo } = req.params;
     const prescription = await prescriptionService.getPrescriptionByIdService(
-      req.params.id
+      prescriptionNo
     );
+
     if (!prescription) {
-      res.status(404).json({ message: "Not found" });
+      res.status(404).json({ message: "Prescription not found" });
       return;
     }
     res.json(prescription);
@@ -47,8 +46,9 @@ export const getPrescriptionById = async (
 
 export const updatePrescription = async (req: Request, res: Response) => {
   try {
+    const { prescriptionNo } = req.params;
     const updated = await prescriptionService.updatePrescriptionService(
-      req.params.id,
+      prescriptionNo,
       req.body,
       req.tokenData?.userId || "system"
     );
@@ -60,8 +60,9 @@ export const updatePrescription = async (req: Request, res: Response) => {
 
 export const cancelPrescription = async (req: Request, res: Response) => {
   try {
+    const { prescriptionNo } = req.params;
     const cancelled = await prescriptionService.cancelPrescriptionService(
-      req.params.id,
+      prescriptionNo,
       req.tokenData?.userId || "system"
     );
     res.json(cancelled);

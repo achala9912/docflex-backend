@@ -3,7 +3,6 @@ import Appointment from "../models/appointment.model";
 import { ACTIONS } from "../constants/modification-history.constant";
 import { Types } from "mongoose";
 
-
 const generatePrescriptionNo = async (
   appointmentObjectId: string
 ): Promise<string> => {
@@ -78,20 +77,20 @@ export const getAllPrescriptionsService = async (filters: {
   return { data: prescriptions, total, page, limit };
 };
 
-export const getPrescriptionByIdService = async (id: string) => {
-  return Prescription.findById(id)
+export const getPrescriptionByIdService = async (prescriptionNo: string) => {
+  return Prescription.findOne({ prescriptionNo, isDeleted: false })
     .populate("patientId")
     .populate("centerId")
     .populate("appointmentId");
 };
 
 export const updatePrescriptionService = async (
-  id: string,
+  prescriptionNo: string,
   data: any,
   userId: string
 ) => {
-  return Prescription.findByIdAndUpdate(
-    id,
+  return Prescription.findOneAndUpdate(
+    { prescriptionNo, isDeleted: false },
     {
       ...data,
       $push: {
@@ -106,9 +105,12 @@ export const updatePrescriptionService = async (
   );
 };
 
-export const cancelPrescriptionService = async (id: string, userId: string) => {
-  return Prescription.findByIdAndUpdate(
-    id,
+export const cancelPrescriptionService = async (
+  prescriptionNo: string,
+  userId: string
+) => {
+  return Prescription.findOneAndUpdate(
+    { prescriptionNo, isDeleted: false },
     {
       status: "cancelled",
       $push: {
