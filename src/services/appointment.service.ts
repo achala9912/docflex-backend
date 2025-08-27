@@ -274,9 +274,6 @@ export const getAllAppointments = async (params: {
     includeDeleted = false,
   } = params;
 
-  let debugInfo: any = {};
-
-  // Build match conditions
   const match: any = {};
   if (centerId) match.centerId = new Types.ObjectId(centerId);
   if (typeof isPatientvisited === "boolean")
@@ -284,21 +281,13 @@ export const getAllAppointments = async (params: {
   if (!includeDeleted) match.isDeleted = { $ne: true };
   if (sessionId) match.sessionId = sessionId;
 
-  // Date filter
-  if (date) {
-    const [year, month, day] = date.split("-").map(Number);
-    const startDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
-    startDate.setMinutes(startDate.getMinutes() - 330); // adjust SL offset
+  const queryDate = date;
+  const startDate = new Date(`${queryDate}T00:00:00.000Z`);
+  const endDate = new Date(`${queryDate}T23:59:59.999Z`);
+  match.date = { $gte: startDate, $lte: endDate };
 
-    const endDate = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
-    endDate.setMinutes(endDate.getMinutes() - 330);
+  const debugInfo = { startDate, endDate };
 
-    match.date = { $gte: startDate, $lte: endDate };
-
-    debugInfo.dateRange = { startDate, endDate };
-  }
-
-  // Build pipeline
   const pipeline: any[] = [
     { $match: match },
     {
@@ -331,17 +320,17 @@ export const getAllAppointments = async (params: {
   const totalResult = await appointment.aggregate(countPipeline);
   const total = totalResult[0]?.total || 0;
 
-  // Apply sort + pagination
+  // Sort + pagination
   pipeline.push(
     { $sort: { date: -1, tokenNo: -1 } },
     { $skip: (page - 1) * limit },
     { $limit: limit }
   );
 
-  // Fetch data
+  // Fetch appointments
   const rawAppointments = await appointment.aggregate(pipeline);
 
-  // Fetch related sessions
+  // Fetch session details
   const sessionIds = rawAppointments.map((a) => a.sessionId);
   const sessions = await session
     .find({ sessionId: { $in: sessionIds }, isDeleted: { $ne: true } })
@@ -351,7 +340,6 @@ export const getAllAppointments = async (params: {
   const sessionMap = new Map<string, ISession>();
   sessions.forEach((s) => sessionMap.set(String(s.sessionId), s));
 
-  // Merge session details
   const data = rawAppointments.map((a) => ({
     ...a,
     sessionId: sessionMap.get(String(a.sessionId)) || null,

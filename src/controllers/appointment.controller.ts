@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import * as AppointmentService from "../services/appointment.service";
 import { IAppointment } from "../interfaces/appointment.interface";
 import { ACTIONS } from "../constants/modification-history.constant";
+
+
 export const createAppointmentHandler = async (
   req: Request,
   res: Response
@@ -32,7 +34,7 @@ export const getAppointmentHandler = async (
 ): Promise<void> => {
   try {
     const appointment = await AppointmentService.getAppointmentById(
-      req.params.id // here, "id" is appointmentId, not Mongo _id
+      req.params.id 
     );
 
     if (!appointment) {
@@ -60,9 +62,10 @@ export const getAllAppointmentsHandler = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { page, limit, search, centerId, isPatientvisited } = req.query;
+    const { date, page, limit, search, centerId, isPatientvisited } = req.query;
 
     const result = await AppointmentService.getAllAppointments({
+      date: date as string, 
       page: parseInt(page as string) || 1,
       limit: parseInt(limit as string) || 10,
       search: search as string,
