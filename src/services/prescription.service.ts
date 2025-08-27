@@ -60,6 +60,50 @@ export const createPrescriptionService = async (data: any, userId: string) => {
   });
 };
 
+// export const getAllPrescriptionsService = async (filters: {
+//   date?: string;
+//   page?: number;
+//   limit?: number;
+//   search?: string;
+//   centerId?: string;
+//   productId?: string;
+// }) => {
+//   const { date, page = 1, limit = 10, search, centerId, productId } = filters;
+
+//   const query: any = { isDeleted: false };
+
+//   if (date) {
+//     query.createdAt = {
+//       $gte: new Date(date + "T00:00:00Z"),
+//       $lte: new Date(date + "T23:59:59Z"),
+//     };
+//   }
+//   if (centerId) query.centerId = new Types.ObjectId(centerId);
+
+//   if (search) {
+//     query.$or = [
+//       { prescriptionNo: { $regex: search, $options: "i" } },
+//       { "patientId.name": { $regex: search, $options: "i" } },
+//     ];
+//   }
+
+//   if (productId) {
+//     query["medications.productId"] = new Types.ObjectId(productId);
+//   }
+
+//   const prescriptions = await Prescription.find(query)
+//     .populate("patientId")
+//     .populate("centerId")
+//     .populate("appointmentId")
+//     .skip((page - 1) * limit)
+//     .limit(limit)
+//     .sort({ createdAt: -1 });
+
+//   const total = await Prescription.countDocuments(query);
+
+//   return { data: prescriptions, total, page, limit };
+// };
+
 export const getAllPrescriptionsService = async (filters: {
   date?: string;
   page?: number;
@@ -67,8 +111,17 @@ export const getAllPrescriptionsService = async (filters: {
   search?: string;
   centerId?: string;
   productId?: string;
+  status?: string; 
 }) => {
-  const { date, page = 1, limit = 10, search, centerId, productId } = filters;
+  const {
+    date,
+    page = 1,
+    limit = 10,
+    search,
+    centerId,
+    productId,
+    status,
+  } = filters;
 
   const query: any = { isDeleted: false };
 
@@ -78,6 +131,7 @@ export const getAllPrescriptionsService = async (filters: {
       $lte: new Date(date + "T23:59:59Z"),
     };
   }
+
   if (centerId) query.centerId = new Types.ObjectId(centerId);
 
   if (search) {
@@ -89,6 +143,10 @@ export const getAllPrescriptionsService = async (filters: {
 
   if (productId) {
     query["medications.productId"] = new Types.ObjectId(productId);
+  }
+
+  if (status) {
+    query.status = status; 
   }
 
   const prescriptions = await Prescription.find(query)
