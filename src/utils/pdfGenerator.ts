@@ -7,7 +7,7 @@ export const generatePrescriptionPDF = (
   return new Promise((resolve, reject) => {
     try {
       const doc = new PDFDocument({
-        margin: 40,
+        margin: 20,
         size: "A4",
         bufferPages: true,
       });
@@ -20,383 +20,343 @@ export const generatePrescriptionPDF = (
         resolve(pdfData);
       });
 
-      // Add background color for header
-      doc.rect(0, 0, doc.page.width, 120).fill("#1e3a8a");
+      // Colors
+      const colors = {
+        primary: '#1565c0',
+        secondary: '#42a5f5',
+        accent: '#0277bd',
+        success: '#388e3c',
+        warning: '#f57c00',
+        neutral: '#616161',
+        light: '#f5f5f5',
+        white: '#ffffff',
+        border: '#e0e0e0',
+        text: '#212121'
+      };
 
-      // Clinic/Medical Center Information - Header
-      doc
-        .fontSize(20)
-        .font("Helvetica-Bold")
-        .fillColor("#ffffff")
-        .text(prescriptionData.centerId.centerName, 50, 30, {
-          align: "center",
-        });
+      const pageWidth = doc.page.width;
+      const pageHeight = doc.page.height;
+      const margin = 20;
+      const contentWidth = pageWidth - (margin * 2);
 
-      doc
-        .fontSize(10)
-        .font("Helvetica")
-        .fillColor("#e0f2fe")
-        .text(prescriptionData.centerId.address, 50, 60, { align: "center" });
+      // Helper function for cards
+      const drawCard = (x: number, y: number, width: number, height: number, fillColor: string = colors.white) => {
+        doc.save();
+        doc.roundedRect(x, y, width, height, 4)
+           .fillColor(fillColor)
+           .strokeColor(colors.border)
+           .lineWidth(0.5)
+           .fillAndStroke();
+        doc.restore();
+      };
 
-      if (prescriptionData.centerId.town) {
-        doc.text(prescriptionData.centerId.town, { align: "center" });
-      }
+      let currentY = 0;
 
-      doc.moveDown(0.3);
+      // HEADER - Compact
+      doc.rect(0, 0, pageWidth, 80).fill(colors.primary);
+      
+      // Medical cross
+      doc.save();
+      doc.translate(25, 20);
+      doc.rect(6, 2, 3, 18).fill(colors.white);
+      doc.rect(2, 8, 11, 3).fill(colors.white);
+      doc.restore();
+
+      // Clinic info - single line
+      doc.fontSize(18)
+         .font("Helvetica-Bold")
+         .fillColor(colors.white)
+         .text(prescriptionData.centerId.centerName, 45, 25);
+
+      doc.fontSize(9)
+         .font("Helvetica")
+         .fillColor('#bbdefb')
+         .text(`${prescriptionData.centerId.address}, ${prescriptionData.centerId.town || ''}`, 45, 45);
+
+      doc.fontSize(8)
+         .text(`Email: ${prescriptionData.centerId.email} | Phone: ${prescriptionData.centerId.contactNo}`, 45, 60);
+
+      currentY = 90;
+
+      // PRESCRIPTION HEADER - Single line
+      drawCard(margin, currentY, contentWidth, 35, colors.light);
+      
+      doc.fontSize(16)
+         .font("Helvetica-Bold")
+         .fillColor(colors.primary)
+         .text("PRESCRIPTION", margin + 10, currentY + 8);
+
+      doc.fontSize(9)
+         .font("Helvetica")
+         .fillColor(colors.text)
+         .text(`#${prescriptionData.prescriptionNo}`, margin + 130, currentY + 12);
+
       doc.text(
-        `📧 ${prescriptionData.centerId.email} | 📞 ${prescriptionData.centerId.contactNo}`,
-        { align: "center" }
+        new Date(prescriptionData.createdAt).toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "short", 
+          year: "numeric"
+        }),
+        pageWidth - 100,
+        currentY + 12
       );
 
-      // Prescription Details Box
-      const boxY = 130;
-      doc
-        .rect(40, boxY, doc.page.width - 80, 80)
-        .fill("#f8fafc")
-        .stroke("#e2e8f0");
+      currentY += 45;
 
-      doc
-        .fontSize(16)
-        .font("Helvetica-Bold")
-        .fillColor("#1e40af")
-        .text("MEDICAL PRESCRIPTION", 50, boxY + 15, { align: "center" });
+      // DOCTOR & PATIENT INFO - Side by side
+      // Doctor info (left)
+      drawCard(margin, currentY, contentWidth / 2 - 5, 55, colors.white);
+      doc.fontSize(10)
+         .font("Helvetica-Bold")
+         .fillColor(colors.primary)
+         .text("DOCTOR", margin + 8, currentY + 8);
 
-      doc.fontSize(10).fillColor("#4b5563");
-      doc.text(
-        `Prescription #: ${prescriptionData.prescriptionNo}`,
-        60,
-        boxY + 45
-      );
-      doc.text(
-        `Date: ${new Date(prescriptionData.createdAt).toLocaleDateString(
-          "en-US",
-          {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          }
-        )}`,
-        doc.page.width - 200,
-        boxY + 45
-      );
+      doc.fontSize(11)
+         .font("Helvetica-Bold")
+         .fillColor(colors.text)
+         .text(`Dr. ${prescriptionData.prescriberDetails.name}`, margin + 8, currentY + 22);
 
-      // Doctor information
-      doc.fontSize(11).fillColor("#1e40af");
-      doc.text(
-        `Dr. ${prescriptionData.prescriberDetails.name}`,
-        doc.page.width - 200,
-        boxY + 65
-      );
-      doc.fontSize(9).fillColor("#64748b");
-      doc.text(
-        prescriptionData.prescriberDetails.specialization,
-        doc.page.width - 200,
-        boxY + 80
-      );
-      doc.text(
-        `SLMC: ${prescriptionData.prescriberDetails.slmcNo}`,
-        doc.page.width - 200,
-        boxY + 95
-      );
+      doc.fontSize(8)
+         .font("Helvetica")
+         .fillColor(colors.neutral)
+         .text(prescriptionData.prescriberDetails.specialization, margin + 8, currentY + 36);
 
-      // Patient Information Section
-      const patientY = boxY + 110;
-      doc
-        .fontSize(14)
-        .font("Helvetica-Bold")
-        .fillColor("#1e3a8a")
-        .text("PATIENT INFORMATION", 50, patientY);
+      doc.fontSize(7)
+         .text(`SLMC: ${prescriptionData.prescriberDetails.slmcNo}`, margin + 8, currentY + 48);
 
-      doc
-        .moveTo(50, patientY + 20)
-        .lineTo(200, patientY + 20)
-        .strokeColor("#1e3a8a")
-        .stroke();
+      // Patient info (right)
+      const patientX = margin + contentWidth / 2 + 5;
+      drawCard(patientX, currentY, contentWidth / 2 - 5, 55, colors.white);
+      
+      doc.fontSize(10)
+         .font("Helvetica-Bold")
+         .fillColor(colors.primary)
+         .text("PATIENT", patientX + 8, currentY + 8);
 
-      // Patient details in two columns
-      doc.fontSize(11).fillColor("#374151");
-      doc.text(
-        `Name: ${prescriptionData.patientId.title} ${prescriptionData.patientId.patientName}`,
-        60,
-        patientY + 35
-      );
-      doc.text(`Age: ${prescriptionData.patientId.age}`, 60, patientY + 55);
-      doc.text(
-        `Contact: ${prescriptionData.patientId.contactNo}`,
-        300,
-        patientY + 35
-      );
-      doc.text(
-        `Email: ${prescriptionData.patientId.email}`,
-        300,
-        patientY + 55
-      );
+      doc.fontSize(9)
+         .font("Helvetica-Bold")
+         .fillColor(colors.text)
+         .text(`${prescriptionData.patientId.title} ${prescriptionData.patientId.patientName}`, patientX + 8, currentY + 22);
 
-      // Medical Information Section
-      const medicalY = patientY + 85;
+      doc.fontSize(8)
+         .font("Helvetica")
+         .fillColor(colors.neutral)
+         .text(`Age: ${prescriptionData.patientId.age} | ${prescriptionData.patientId.contactNo}`, patientX + 8, currentY + 36);
 
-      // Reason for Visit
-      doc
-        .fontSize(12)
-        .font("Helvetica-Bold")
-        .fillColor("#1e3a8a")
-        .text("REASON FOR VISIT", 50, medicalY);
-      doc
-        .rect(50, medicalY + 20, doc.page.width - 100, 30)
-        .fill("#f1f5f9")
-        .stroke("#e2e8f0");
-      doc
-        .fontSize(11)
-        .fillColor("#374151")
-        .text(prescriptionData.reasonForVisit, 60, medicalY + 28);
+      doc.fontSize(7)
+         .text(prescriptionData.patientId.email, patientX + 8, currentY + 48);
+
+      currentY += 65;
+
+      // CLINICAL INFO - Compact rows
+      // Reason for visit
+      drawCard(margin, currentY, contentWidth, 28, '#fff3e0');
+      doc.fontSize(9)
+         .font("Helvetica-Bold")
+         .fillColor('#e65100')
+         .text("REASON:", margin + 8, currentY + 6);
+      
+      doc.fontSize(9)
+         .font("Helvetica")
+         .fillColor('#bf360c')
+         .text(prescriptionData.reasonForVisit, margin + 60, currentY + 6);
 
       // Symptoms (if available)
       if (prescriptionData.symptoms) {
-        doc
-          .fontSize(12)
-          .font("Helvetica-Bold")
-          .fillColor("#1e3a8a")
-          .text("SYMPTOMS", 50, medicalY + 60);
-        doc
-          .rect(50, medicalY + 80, doc.page.width - 100, 30)
-          .fill("#f1f5f9")
-          .stroke("#e2e8f0");
-        doc
-          .fontSize(11)
-          .fillColor("#374151")
-          .text(prescriptionData.symptoms, 60, medicalY + 88);
+        doc.fontSize(9)
+           .font("Helvetica-Bold")
+           .fillColor('#d32f2f')
+           .text("SYMPTOMS:", margin + 8, currentY + 18);
+        
+        doc.fontSize(9)
+           .font("Helvetica")
+           .fillColor('#c62828')
+           .text(prescriptionData.symptoms, margin + 75, currentY + 18);
       }
 
-      // Clinical Details
-      const clinicalY = medicalY + (prescriptionData.symptoms ? 120 : 60);
-      doc
-        .fontSize(12)
-        .font("Helvetica-Bold")
-        .fillColor("#1e3a8a")
-        .text("CLINICAL FINDINGS", 50, clinicalY);
-      doc
-        .rect(50, clinicalY + 20, doc.page.width - 100, 40)
-        .fill("#f1f5f9")
-        .stroke("#e2e8f0");
-      doc
-        .fontSize(11)
-        .fillColor("#374151")
-        .text(
-          prescriptionData.clinicalDetails ||
-            "No significant clinical findings",
-          60,
-          clinicalY + 28,
-          {
-            width: doc.page.width - 120,
-            align: "left",
-          }
-        );
+      currentY += 38;
 
-      // Vital Signs Section - In a table format
-      const vitalSignsY = clinicalY + 80;
-      doc
-        .fontSize(12)
-        .font("Helvetica-Bold")
-        .fillColor("#1e3a8a")
-        .text("VITAL SIGNS", 50, vitalSignsY);
+      // Clinical findings
+      drawCard(margin, currentY, contentWidth, 25, '#e8f5e8');
+      doc.fontSize(9)
+         .font("Helvetica-Bold")
+         .fillColor('#2e7d32')
+         .text("FINDINGS:", margin + 8, currentY + 8);
+      
+      doc.fontSize(9)
+         .font("Helvetica")
+         .fillColor('#1b5e20')
+         .text(
+           prescriptionData.clinicalDetails || "No significant findings",
+           margin + 65,
+           currentY + 8,
+           { width: contentWidth - 75 }
+         );
 
-      // Check if vitalSigns exists and is an array with at least one element
-      if (
-        prescriptionData.vitalSigns &&
-        Array.isArray(prescriptionData.vitalSigns) &&
-        prescriptionData.vitalSigns.length > 0
-      ) {
+      currentY += 35;
+
+      // VITAL SIGNS - Horizontal layout
+      drawCard(margin, currentY, contentWidth, 30, colors.light);
+      doc.fontSize(9)
+         .font("Helvetica-Bold")
+         .fillColor(colors.primary)
+         .text("VITALS:", margin + 8, currentY + 8);
+
+      if (prescriptionData.vitalSigns && 
+          Array.isArray(prescriptionData.vitalSigns) && 
+          prescriptionData.vitalSigns.length > 0) {
+        
         const vitalSigns = prescriptionData.vitalSigns[0];
-
-        // Create a table for vital signs
-        const tableTop = vitalSignsY + 20;
-        const col1 = 60;
-        const col2 = 200;
-        const col3 = 340;
-        const col4 = 450;
-        const rowHeight = 25;
-
-        // Table headers
-        doc.fontSize(10).font("Helvetica-Bold").fillColor("#1e40af");
-        doc.text("Parameter", col1, tableTop);
-        doc.text("Value", col2, tableTop);
-        doc.text("Parameter", col3, tableTop);
-        doc.text("Value", col4, tableTop);
-
-        doc
-          .moveTo(50, tableTop + 15)
-          .lineTo(doc.page.width - 50, tableTop + 15)
-          .strokeColor("#cbd5e1")
-          .stroke();
-
-        // Table rows
-        doc.fontSize(10).font("Helvetica").fillColor("#374151");
-        let row = 1;
-
+        let vitalText = "";
+        
         if (vitalSigns.weight && vitalSigns.weight !== "undefined") {
-          doc.text("Weight", col1, tableTop + row * rowHeight);
-          doc.text(vitalSigns.weight, col2, tableTop + row * rowHeight);
-          row++;
+          const weight = vitalSigns.weight.replace(/[^0-9.]/g, '');
+          vitalText += `Weight: ${weight}kg  `;
         }
-
+        
         if (vitalSigns.height && vitalSigns.height !== "undefined") {
-          doc.text("Height", col1, tableTop + row * rowHeight);
-          doc.text(vitalSigns.height, col2, tableTop + row * rowHeight);
-          row++;
+          const height = vitalSigns.height.replace(/[^0-9.]/g, '');
+          vitalText += `Height: ${height}cm  `;
         }
-
+        
         if (vitalSigns.bmi && vitalSigns.bmi !== "undefined") {
-          doc.text("BMI", col3, tableTop + row * rowHeight);
-          doc.text(vitalSigns.bmi, col4, tableTop + row * rowHeight);
-          row++;
+          vitalText += `BMI: ${vitalSigns.bmi}  `;
         }
-
+        
         if (vitalSigns.pulseRate && vitalSigns.pulseRate !== "undefined") {
-          doc.text("Pulse Rate", col3, tableTop + row * rowHeight);
-          doc.text(vitalSigns.pulseRate, col4, tableTop + row * rowHeight);
+          const bp = vitalSigns.pulseRate.replace(/MM/g, '');
+          vitalText += `BP: ${bp}mmHg`;
         }
+
+        doc.fontSize(8)
+           .font("Helvetica")
+           .fillColor(colors.success)
+           .text(vitalText || "Not recorded", margin + 55, currentY + 8);
       } else {
-        doc
-          .fontSize(10)
-          .fillColor("#64748b")
-          .text("No vital signs recorded", 60, vitalSignsY + 25);
+        doc.fontSize(8)
+           .fillColor(colors.neutral)
+           .text("Not recorded", margin + 55, currentY + 8);
       }
 
-      // Medications Section - Most important part for pharmacists
-      const medsY = vitalSignsY + 100;
-      doc
-        .fontSize(14)
-        .font("Helvetica-Bold")
-        .fillColor("#1e3a8a")
-        .text("PRESCRIPTION MEDICATIONS", 50, medsY, { align: "center" });
+      currentY += 40;
 
-      doc
-        .moveTo(50, medsY + 20)
-        .lineTo(doc.page.width - 50, medsY + 20)
-        .strokeColor("#1e3a8a")
-        .lineWidth(2)
-        .stroke();
+      // MEDICATIONS - Compact but clear
+      doc.fontSize(12)
+         .font("Helvetica-Bold")
+         .fillColor(colors.primary)
+         .text("MEDICATIONS", margin, currentY, { align: "center", width: contentWidth });
 
-      if (
-        prescriptionData.medications &&
-        prescriptionData.medications.length > 0
-      ) {
-        let currentY = medsY + 40;
+      doc.moveTo(margin, currentY + 18)
+         .lineTo(pageWidth - margin, currentY + 18)
+         .strokeColor(colors.primary)
+         .lineWidth(1.5)
+         .stroke();
 
-        prescriptionData.medications.forEach(
-          (medication: Medication, index: number) => {
-            // Medication card
-            doc
-              .rect(50, currentY, doc.page.width - 100, 80)
-              .fill(index % 2 === 0 ? "#f0f9ff" : "#f8fafc")
-              .stroke("#e0f2fe");
+      currentY += 30;
 
-            // Medication name and generic name
-            doc.fontSize(12).font("Helvetica-Bold").fillColor("#0369a1");
-            doc.text(`${medication.productName}`, 60, currentY + 15);
-            doc.fontSize(10).font("Helvetica").fillColor("#64748b");
-            doc.text(`(${medication.genericName})`, 60, currentY + 35);
+      if (prescriptionData.medications && prescriptionData.medications.length > 0) {
+        prescriptionData.medications.forEach((medication: Medication, index: number) => {
+          // Compact medication card
+          drawCard(margin, currentY, contentWidth, 45, colors.white);
 
-            // Dosage instructions
-            doc.fontSize(11).fillColor("#374151");
-            doc.text(`Dose: ${medication.dose}`, 250, currentY + 15);
-            doc.text(`Frequency: ${medication.frequency}`, 250, currentY + 35);
-            doc.text(`Duration: ${medication.duration}`, 250, currentY + 55);
+          // Number circle
+          doc.save();
+          doc.circle(margin + 15, currentY + 15, 8)
+             .fillColor(colors.secondary)
+             .fill();
+          
+          doc.fontSize(9)
+             .font("Helvetica-Bold")
+             .fillColor(colors.white)
+             .text(`${index + 1}`, margin + 12, currentY + 12);
+          doc.restore();
 
-            // Notes if available
-            if (medication.note) {
-              doc.fontSize(9).fillColor("#f59e0b");
-              doc.text(`Note: ${medication.note}`, 400, currentY + 15, {
-                width: 120,
-                align: "left",
-              });
-            }
+          // Medicine name
+          doc.fontSize(11)
+             .font("Helvetica-Bold")
+             .fillColor(colors.text)
+             .text(medication.productName, margin + 30, currentY + 8);
 
-            currentY += 90;
+          doc.fontSize(8)
+             .font("Helvetica")
+             .fillColor(colors.neutral)
+             .text(`${medication.genericName}`, margin + 30, currentY + 22);
+
+          // Dosage info - horizontal
+          doc.fontSize(8)
+             .font("Helvetica")
+             .fillColor(colors.text)
+             .text(`${medication.dose} | ${medication.frequency} | ${medication.duration}`, margin + 30, currentY + 34);
+
+          // Note if available
+          if (medication.note) {
+            doc.fontSize(7)
+               .font("Helvetica-Bold")
+               .fillColor(colors.warning)
+               .text(`${medication.note}`, margin + 350, currentY + 15, {
+                 width: 150
+               });
           }
-        );
+
+          currentY += 55;
+        });
       } else {
-        doc
-          .fontSize(11)
-          .fillColor("#64748b")
-          .text("No medications prescribed", 60, medsY + 40);
+        drawCard(margin, currentY, contentWidth, 25, '#ffebee');
+        doc.fontSize(9)
+           .fillColor('#d32f2f')
+           .text("No medications prescribed", margin + 8, currentY + 8);
+        currentY += 35;
       }
 
-      // Advice Section
-      const adviceY = doc.y + 30;
-      doc
-        .fontSize(12)
-        .font("Helvetica-Bold")
-        .fillColor("#1e3a8a")
-        .text("MEDICAL ADVICE & INSTRUCTIONS", 50, adviceY);
+      // ADVICE - Compact
+      drawCard(margin, currentY, contentWidth, 35, '#e8f5e8');
+      doc.fontSize(9)
+         .font("Helvetica-Bold")
+         .fillColor(colors.success)
+         .text("ADVICE:", margin + 8, currentY + 8);
 
-      doc
-        .rect(50, adviceY + 20, doc.page.width - 100, 50)
-        .fill("#f0fdf4")
-        .stroke("#bbf7d0");
+      doc.fontSize(8)
+         .font("Helvetica")
+         .fillColor('#2e7d32')
+         .text(
+           prescriptionData.advice || "Take as prescribed. Follow up if needed.",
+           margin + 55,
+           currentY + 8,
+           { width: contentWidth - 65 }
+         );
 
-      doc
-        .fontSize(11)
-        .fillColor("#15803d")
-        .text(
-          prescriptionData.advice ||
-            "Follow up as needed. Contact clinic if symptoms persist or worsen.",
-          60,
-          adviceY + 30,
-          {
-            width: doc.page.width - 120,
-            align: "left",
-          }
-        );
+      // FOOTER - Bottom of page
+      const footerY = pageHeight - 60;
+      
+      // Signature area
+      doc.moveTo(margin, footerY)
+         .lineTo(pageWidth - margin, footerY)
+         .strokeColor(colors.border)
+         .stroke();
 
-      // Footer with signature
-      const footerY = doc.page.height - 100;
-      doc
-        .moveTo(50, footerY)
-        .lineTo(doc.page.width - 50, footerY)
-        .strokeColor("#cbd5e1")
-        .stroke();
+      doc.fontSize(8)
+         .font("Helvetica")
+         .fillColor(colors.neutral)
+         .text("Digital prescription - Valid 30 days", margin, footerY + 10);
 
-      doc
-        .fontSize(10)
-        .fillColor("#64748b")
-        .text(
-          "This is an electronically generated prescription. No physical signature is required.",
-          50,
-          footerY + 10,
-          { align: "center" }
-        );
+      doc.fontSize(9)
+         .font("Helvetica-Bold")
+         .fillColor(colors.text)
+         .text(`Dr. ${prescriptionData.prescriberDetails.name}`, pageWidth - 180, footerY + 10);
 
-      doc
-        .fontSize(11)
-        .font("Helvetica-Bold")
-        .fillColor("#1e3a8a")
-        .text(
-          `Dr. ${prescriptionData.prescriberDetails.name}`,
-          doc.page.width - 200,
-          footerY + 30
-        );
+      doc.fontSize(7)
+         .font("Helvetica")
+         .fillColor(colors.neutral)
+         .text(`${prescriptionData.prescriberDetails.specialization} | SLMC: ${prescriptionData.prescriberDetails.slmcNo}`, pageWidth - 180, footerY + 25);
 
-      doc
-        .fontSize(9)
-        .fillColor("#64748b")
-        .text(
-          prescriptionData.prescriberDetails.specialization,
-          doc.page.width - 200,
-          footerY + 50
-        );
-      doc.text(
-        `SLMC: ${prescriptionData.prescriberDetails.slmcNo}`,
-        doc.page.width - 200,
-        footerY + 65
-      );
-
-      // Page numbering
-      const bottom = doc.page.height - 50;
-      doc
-        .fontSize(8)
-        .fillColor("#94a3b8")
-        .text("Page 1 of 1", doc.page.width / 2, bottom, { align: "center" });
+      // Generation info
+      doc.fontSize(6)
+         .fillColor('#9e9e9e')
+         .text(
+           `Generated: ${new Date().toLocaleString('en-GB')}`,
+           margin,
+           pageHeight - 15
+         );
 
       doc.end();
     } catch (error) {
