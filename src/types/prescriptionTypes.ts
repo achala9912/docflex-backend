@@ -46,7 +46,8 @@ export interface PrescriptionData {
   prescriptionNo: string;
   createdAt: string | Date;
   patientId: PatientDetails;
-  vitalSigns?: VitalSigns;
+  vitalSigns?: VitalSigns[];
+  symptoms?: string;
   reasonForVisit: string;
   clinicalDetails: string;
   advice: string;
