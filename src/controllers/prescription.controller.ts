@@ -70,3 +70,30 @@ export const cancelPrescription = async (req: Request, res: Response) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+export const sendPrescriptionEmailHandler = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { prescriptionNo } = req.params;
+    const userId = req.tokenData?.userId || "system";
+
+    // Use the imported service
+    const result = await prescriptionService.sendPrescriptionEmailService(
+      prescriptionNo,
+      userId
+    );
+
+    res.json({
+      success: true,
+      message: "Prescription sent successfully",
+      data: result,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

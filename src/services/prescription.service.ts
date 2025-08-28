@@ -2,6 +2,9 @@ import Prescription from "../models/prescription.model";
 import Appointment from "../models/appointment.model";
 import { ACTIONS } from "../constants/modification-history.constant";
 import { Types } from "mongoose";
+import { generatePrescriptionPDF } from "../utils/pdfGenerator";
+import { sendPrescriptionEmail } from "../external-services/emailService";
+import { PrescriptionData } from "../types/prescriptionTypes"; // Make sure this import exists
 
 const generatePrescriptionNo = async (
   appointmentObjectId: string
@@ -19,19 +22,6 @@ const generatePrescriptionNo = async (
 
   return `${appointmentCode}-P${count + 1}`;
 };
-
-// export const createPrescriptionService = async (data: any, userId: string) => {
-//   const prescriptionNo = await generatePrescriptionNo(data.appointmentId);
-
-//   return Prescription.create({
-//     ...data,
-//     prescriptionNo,
-//     createdBy: userId,
-//     modificationHistory: [
-//       { action: ACTIONS.CREATE, modifiedBy: userId, date: new Date() },
-//     ],
-//   });
-// };
 
 export const createPrescriptionService = async (data: any, userId: string) => {
   // Check if the appointment exists and patient has visited
@@ -60,50 +50,6 @@ export const createPrescriptionService = async (data: any, userId: string) => {
   });
 };
 
-// export const getAllPrescriptionsService = async (filters: {
-//   date?: string;
-//   page?: number;
-//   limit?: number;
-//   search?: string;
-//   centerId?: string;
-//   productId?: string;
-// }) => {
-//   const { date, page = 1, limit = 10, search, centerId, productId } = filters;
-
-//   const query: any = { isDeleted: false };
-
-//   if (date) {
-//     query.createdAt = {
-//       $gte: new Date(date + "T00:00:00Z"),
-//       $lte: new Date(date + "T23:59:59Z"),
-//     };
-//   }
-//   if (centerId) query.centerId = new Types.ObjectId(centerId);
-
-//   if (search) {
-//     query.$or = [
-//       { prescriptionNo: { $regex: search, $options: "i" } },
-//       { "patientId.name": { $regex: search, $options: "i" } },
-//     ];
-//   }
-
-//   if (productId) {
-//     query["medications.productId"] = new Types.ObjectId(productId);
-//   }
-
-//   const prescriptions = await Prescription.find(query)
-//     .populate("patientId")
-//     .populate("centerId")
-//     .populate("appointmentId")
-//     .skip((page - 1) * limit)
-//     .limit(limit)
-//     .sort({ createdAt: -1 });
-
-//   const total = await Prescription.countDocuments(query);
-
-//   return { data: prescriptions, total, page, limit };
-// };
-
 export const getAllPrescriptionsService = async (filters: {
   date?: string;
   page?: number;
@@ -111,7 +57,7 @@ export const getAllPrescriptionsService = async (filters: {
   search?: string;
   centerId?: string;
   productId?: string;
-  status?: string; 
+  status?: string;
 }) => {
   const {
     date,
@@ -146,7 +92,7 @@ export const getAllPrescriptionsService = async (filters: {
   }
 
   if (status) {
-    query.status = status; 
+    query.status = status;
   }
 
   const prescriptions = await Prescription.find(query)
@@ -203,6 +149,57 @@ export const cancelPrescriptionService = async (
           action: ACTIONS.CANCEL,
           modifiedBy: userId,
           date: new Date(),
+        },
+      },
+    },
+    { new: true }
+  );
+};
+
+export const sendPrescriptionEmailService = async (
+  prescriptionNo: string,
+  userId: string
+): Promise<any> => {
+  const prescription = await Prescription.findOne({
+    prescriptionNo,
+    isDeleted: false,
+  })
+    .populate("patientId")
+    .populate("centerId")
+    .populate("appointmentId");
+
+  if (!prescription) {
+    throw new Error("Prescription not found");
+  }
+
+  // Check if patient has email - add type assertion for TypeScript
+  const patientEmail = (prescription.patientId as any).email;
+  if (!patientEmail) {
+    throw new Error("Patient does not have an email address");
+  }
+
+  // Generate PDF - you may need to cast the prescription to the correct type
+  const pdfBuffer = await generatePrescriptionPDF(
+    prescription as unknown as PrescriptionData
+  );
+
+  // Send email
+  await sendPrescriptionEmail(
+    patientEmail,
+    prescription as unknown as PrescriptionData,
+    pdfBuffer
+  );
+
+  // Update modification history
+  return Prescription.findOneAndUpdate(
+    { prescriptionNo, isDeleted: false },
+    {
+      $push: {
+        modificationHistory: {
+          action: "EMAIL_SENT",
+          modifiedBy: userId,
+          date: new Date(),
+          details: `Prescription sent to ${patientEmail}`,
         },
       },
     },

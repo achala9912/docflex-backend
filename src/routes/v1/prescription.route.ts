@@ -20,6 +20,12 @@ router.post(
   prescriptionController.createPrescription
 );
 
+router.post(
+  "/:prescriptionNo/send-email",
+  checkPermission(PERMISSIONS.PRESCRIPTION_MANAGEMENT),
+  prescriptionController.sendPrescriptionEmailHandler
+);
+
 router.get(
   "/",
   checkPermission(PERMISSIONS.PRESCRIPTION_MANAGEMENT),

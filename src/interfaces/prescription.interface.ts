@@ -14,7 +14,7 @@ export interface IPrescription extends Document {
   centerId: Types.ObjectId | IMedicalCenter;
   prescriptionType: string;
   appointmentId: Types.ObjectId | IAppointment;
-  patientId: Types.ObjectId | IPatient;
+   patientId: Types.ObjectId | IPatient;
   reasonForVisit: string;
   symptoms?: string[];
   vitalSigns: Array<{
