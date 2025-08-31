@@ -7,7 +7,7 @@ export const handleChat = async (
   res: Response
 ): Promise<void> => {
   const { question } = req.body;
-  const userId = (req as any).tokenData?.userId; // Using your established pattern
+  const userId = (req as any).tokenData?.userId;
 
   if (!question || !userId) {
     res
