@@ -22,6 +22,11 @@ router.get(
   checkPermission(PERMISSIONS.PRODUCT_MANAGEMENT),
   productController.getAllProducts
 );
+router.get(
+  "/suggestions",
+  checkPermission(PERMISSIONS.PRODUCT_MANAGEMENT),
+  productController.getProductSuggestion
+);
 
 router.get(
   "/:id",

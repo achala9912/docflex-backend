@@ -1,4 +1,3 @@
-// types/prescription.ts
 export interface PatientDetails {
   title: string;
   patientName: string;

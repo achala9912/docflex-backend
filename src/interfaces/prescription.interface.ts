@@ -14,9 +14,10 @@ export interface IPrescription extends Document {
   centerId: Types.ObjectId | IMedicalCenter;
   prescriptionType: string;
   appointmentId: Types.ObjectId | IAppointment;
-   patientId: Types.ObjectId | IPatient;
+  patientId: Types.ObjectId | IPatient;
   reasonForVisit: string;
   symptoms?: string[];
+  labTests?: string[];
   vitalSigns: Array<{
     weight: string;
     height: string;
@@ -31,6 +32,7 @@ export interface IPrescription extends Document {
     productName: string;
     genericName: string;
     dose: string;
+    doseUnit: string;
     frequency: string;
     duration: string;
     note?: string;

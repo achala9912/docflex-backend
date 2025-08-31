@@ -19,6 +19,7 @@ const PrescriptionSchema = new Schema<IPrescription>(
     patientId: { type: Schema.Types.ObjectId, ref: "Patient", required: true },
     reasonForVisit: { type: String, required: true },
     symptoms: [{ type: String }],
+    labTests: [{ type: String }],
     vitalSigns: [
       {
         weight: String,
@@ -36,6 +37,7 @@ const PrescriptionSchema = new Schema<IPrescription>(
         productName: String,
         genericName: String,
         dose: String,
+        doseUnit: String,
         frequency: String,
         duration: String,
         note: String,

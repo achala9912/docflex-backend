@@ -4,7 +4,7 @@ import { ACTIONS } from "../constants/modification-history.constant";
 import { Types } from "mongoose";
 import { generatePrescriptionPDF } from "../utils/pdfGenerator";
 import { sendPrescriptionEmail } from "../external-services/emailService";
-import { PrescriptionData } from "../types/prescriptionTypes"; // Make sure this import exists
+import { PrescriptionData } from "../types/prescriptionTypes"; 
 
 const generatePrescriptionNo = async (
   appointmentObjectId: string

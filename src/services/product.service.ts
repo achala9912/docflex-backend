@@ -2,6 +2,7 @@ import Product from "../models/product.model";
 import MedicalCenter from "../models/medicalCenter.model";
 import { IProduct } from "../interfaces/product.interface";
 import { ACTIONS } from "../constants/modification-history.constant";
+import { IGenericName } from "../interfaces/generic-name.interface";
 
 export const createProduct = async (
   productName: string,
@@ -150,4 +151,34 @@ export const deleteProduct = async (productId: string, deletedBy: string) => {
 
   if (!deleted) throw new Error("Product not found");
   return deleted;
+};
+
+interface ProductSuggestion {
+  id: string;
+  productId: string;
+  productName: string;
+  genericName: string;
+}
+
+export const getProductSuggestion = async (
+  centerId?: string
+): Promise<ProductSuggestion[]> => {
+  const query: any = { isDeleted: false };
+
+  if (!centerId) {
+    throw new Error("centerId is required");
+  }
+  // Populate genericId and cast the result type
+  const products = await Product.find(query)
+    .limit(50)
+    .select("productId productName genericId")
+    .populate<{ genericId: IGenericName }>("genericId", "genericName")
+    .lean();
+
+  return products.map((p) => ({
+    id: p._id.toString(),
+    productId: p.productId,
+    productName: p.productName,
+    genericName: (p.genericId as IGenericName)?.genericName || "",
+  }));
 };

@@ -226,7 +226,7 @@ export const getAppointmentById = async (
 ): Promise<IAppointment | null> => {
   const appt = await appointment
     .findOne({ appointmentId })
-    .populate("centerId", "centerId centerName")
+    .populate("centerId", "centerId centerName address contactNo town email logo")
     .populate(
       "patientId",
       "patientId patientName age email contactNo address nic remark"
