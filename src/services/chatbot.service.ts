@@ -3,7 +3,6 @@ import { getEmbedding } from "./localEmbeddings.service";
 import BNFData, { IBNFData } from "../models/bnfData.model";
 import ChatHistory, { IChatHistory } from "../models/chatHistory.model";
 
-
 export const getRAGAnswer = async (userQuestion: string): Promise<string> => {
   try {
     const questionEmbedding = await getEmbedding(userQuestion);
@@ -70,5 +69,17 @@ export const deleteChat = async (
   } catch (error) {
     console.error("Error deleting chat:", error);
     throw new Error("Could not delete chat.");
+  }
+};
+
+export const deleteAllChatsByUserId = async (
+  userId: string
+): Promise<{ deletedCount?: number }> => {
+  try {
+    const result = await ChatHistory.deleteMany({ userId });
+    return result;
+  } catch (error) {
+    console.error("Error deleting all chats:", error);
+    throw new Error("Could not delete all chats.");
   }
 };

@@ -4,6 +4,7 @@ import {
   getChatById,
   getChatsByUserId,
   deleteChat,
+  deleteAllChatsByUserId,
 } from "../services/chatbot.service";
 import ChatHistory from "../models/chatHistory.model";
 
@@ -85,12 +86,10 @@ export const getAllChatsHandler = async (
     const chats = await getChatsByUserId(userId);
     res.status(200).json({ success: true, data: chats });
   } catch (error: any) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: error.message || "Failed to get chats.",
-      });
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to get chats.",
+    });
   }
 };
 
@@ -108,12 +107,10 @@ export const getChatByIdHandler = async (
     }
     res.status(200).json({ success: true, data: chat });
   } catch (error: any) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: error.message || "Failed to get chat.",
-      });
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to get chat.",
+    });
   }
 };
 
@@ -133,11 +130,40 @@ export const deleteChatHandler = async (
       .status(200)
       .json({ success: true, message: "Chat deleted successfully" });
   } catch (error: any) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: error.message || "Failed to delete chat.",
-      });
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to delete chat.",
+    });
+  }
+};
+
+export const deleteAllChatsHandler = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const userId = (req as any).tokenData?.userId;
+
+  if (!userId) {
+    res.status(400).json({ success: false, message: "User ID is required" });
+    return;
+  }
+
+  try {
+    const result = await deleteAllChatsByUserId(userId);
+    if (!result.deletedCount) {
+      res.status(404).json({ success: false, message: "No chats found" });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "All chats deleted successfully",
+      deletedCount: result.deletedCount,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to delete all chats.",
+    });
   }
 };
