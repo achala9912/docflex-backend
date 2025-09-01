@@ -15,6 +15,7 @@ export interface IPrescription extends Document {
   prescriptionType: string;
   appointmentId: Types.ObjectId | IAppointment;
   patientId: Types.ObjectId | IPatient;
+  patientName: string;
   reasonForVisit: string;
   symptoms?: string[];
   labTests?: string[];

@@ -4,7 +4,8 @@ import { ACTIONS } from "../constants/modification-history.constant";
 import { Types } from "mongoose";
 import { generatePrescriptionPDF } from "../utils/pdfGenerator";
 import { sendPrescriptionEmail } from "../external-services/emailService";
-import { PrescriptionData } from "../types/prescriptionTypes"; 
+import { PrescriptionData } from "../types/prescriptionTypes";
+import Patient from "../models/patient.model";
 
 const generatePrescriptionNo = async (
   appointmentObjectId: string
@@ -24,26 +25,22 @@ const generatePrescriptionNo = async (
 };
 
 export const createPrescriptionService = async (data: any, userId: string) => {
-  // Check if the appointment exists and patient has visited
   const appointment = await Appointment.findById(data.appointmentId);
-
-  if (!appointment) {
-    throw new Error("Appointment not found");
-  }
-
-  // Check if patient has visited (using both status and isPatientvisited field)
-  const hasVisited = appointment.isPatientvisited === true;
-
-  if (!hasVisited) {
-    throw new Error("Cannot create prescription - patient has not visited yet");
-  }
+  if (!appointment) throw new Error("Appointment not found");
+  if (!appointment.isPatientvisited)
+    throw new Error("Patient has not visited yet");
 
   const prescriptionNo = await generatePrescriptionNo(data.appointmentId);
+
+  // Get patient name
+  const patient = await Patient.findById(data.patientId);
+  if (!patient) throw new Error("Patient not found");
 
   return Prescription.create({
     ...data,
     prescriptionNo,
     createdBy: userId,
+    patientName: patient.patientName, // unencrypted
     modificationHistory: [
       { action: ACTIONS.CREATE, modifiedBy: userId, date: new Date() },
     ],
@@ -83,7 +80,7 @@ export const getAllPrescriptionsService = async (filters: {
   if (search) {
     query.$or = [
       { prescriptionNo: { $regex: search, $options: "i" } },
-      { "patientId.name": { $regex: search, $options: "i" } },
+      { patientName: { $regex: search, $options: "i" } },
     ];
   }
 

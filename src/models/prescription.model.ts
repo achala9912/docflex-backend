@@ -17,7 +17,7 @@ const PrescriptionSchema = new Schema<IPrescription>(
       required: true,
     },
     patientId: { type: Schema.Types.ObjectId, ref: "Patient", required: true },
-
+    patientName: { type: String },
     reasonForVisit: { type: String, required: true },
     symptoms: [{ type: String }],
     labTests: [{ type: String }],
@@ -66,8 +66,8 @@ const PrescriptionSchema = new Schema<IPrescription>(
   { timestamps: true }
 );
 
-const encKey = process.env.DB_ENCRYPTION_KEY as string; 
-const sigKey = process.env.DB_SIGNING_KEY as string; 
+const encKey = process.env.DB_ENCRYPTION_KEY as string;
+const sigKey = process.env.DB_SIGNING_KEY as string;
 
 PrescriptionSchema.plugin(encrypt, {
   encryptionKey: encKey,
