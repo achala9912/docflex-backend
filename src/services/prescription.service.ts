@@ -153,6 +153,57 @@ export const cancelPrescriptionService = async (
   );
 };
 
+// export const sendPrescriptionEmailService = async (
+//   prescriptionNo: string,
+//   userId: string
+// ): Promise<any> => {
+//   const prescription = await Prescription.findOne({
+//     prescriptionNo,
+//     isDeleted: false,
+//   })
+//     .populate("patientId")
+//     .populate("centerId")
+//     .populate("appointmentId");
+
+//   if (!prescription) {
+//     throw new Error("Prescription not found");
+//   }
+
+//   // Check if patient has email - add type assertion for TypeScript
+//   const patientEmail = (prescription.patientId as any).email;
+//   if (!patientEmail) {
+//     throw new Error("Patient does not have an email address");
+//   }
+
+//   // Generate PDF - you may need to cast the prescription to the correct type
+//   const pdfBuffer = await generatePrescriptionPDF(
+//     prescription as unknown as PrescriptionData
+//   );
+
+//   // Send email
+//   await sendPrescriptionEmail(
+//     patientEmail,
+//     prescription as unknown as PrescriptionData,
+//     pdfBuffer
+//   );
+
+//   // Update modification history
+//   return Prescription.findOneAndUpdate(
+//     { prescriptionNo, isDeleted: false },
+//     {
+//       $push: {
+//         modificationHistory: {
+//           action: "EMAIL_SENT",
+//           modifiedBy: userId,
+//           date: new Date(),
+//           details: `Prescription sent to ${patientEmail}`,
+//         },
+//       },
+//     },
+//     { new: true }
+//   );
+// };
+
 export const sendPrescriptionEmailService = async (
   prescriptionNo: string,
   userId: string
@@ -169,23 +220,53 @@ export const sendPrescriptionEmailService = async (
     throw new Error("Prescription not found");
   }
 
-  // Check if patient has email - add type assertion for TypeScript
+  // Check if patient has email
   const patientEmail = (prescription.patientId as any).email;
   if (!patientEmail) {
     throw new Error("Patient does not have an email address");
   }
 
-  // Generate PDF - you may need to cast the prescription to the correct type
-  const pdfBuffer = await generatePrescriptionPDF(
-    prescription as unknown as PrescriptionData
-  );
+  // Prepare the data for PDF generation with safe defaults
+  const prescriptionData: PrescriptionData = {
+    centerId: {
+      centerName: (prescription.centerId as any).centerName || "",
+      contactNo: (prescription.centerId as any).contactNo || "",
+      address: (prescription.centerId as any).address || "",
+      town: (prescription.centerId as any).town,
+      email: (prescription.centerId as any).email,
+    },
+    prescriptionNo: prescription.prescriptionNo,
+    createdAt: prescription.createdAt.toISOString(),
+    patientId: {
+      patientName: (prescription.patientId as any).patientName || "",
+      age: (prescription.patientId as any).age || "",
+      contactNo: (prescription.patientId as any).contactNo || "",
+      email: (prescription.patientId as any).email || "",
+      gender: (prescription.patientId as any).gender,
+      title: (prescription.patientId as any).title,
+    },
+    reasonForVisit: prescription.reasonForVisit || "",
+    symptoms: prescription.symptoms || [],
+    labTests: prescription.labTests || [],
+    vitalSigns: prescription.vitalSigns || [],
+    clinicalDetails: prescription.clinicalDetails || "",
+    advice: prescription.advice || "",
+    remark: prescription.remark,
+    medications: prescription.medications || [],
+    prescriberDetails: {
+      name: prescription.prescriberDetails.name || "",
+      specialization: prescription.prescriberDetails.specialization || "",
+      slmcNo: prescription.prescriberDetails.slmcNo || "",
+      title: prescription.prescriberDetails.title,
+      digitalSignature: prescription.prescriberDetails.digitalSignature,
+    },
+  };
+
+  // Generate PDF
+  const pdfBuffer = await generatePrescriptionPDF(prescriptionData);
 
   // Send email
-  await sendPrescriptionEmail(
-    patientEmail,
-    prescription as unknown as PrescriptionData,
-    pdfBuffer
-  );
+  await sendPrescriptionEmail(patientEmail, prescriptionData, pdfBuffer);
 
   // Update modification history
   return Prescription.findOneAndUpdate(

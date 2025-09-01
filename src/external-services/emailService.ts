@@ -28,8 +28,6 @@ export const sendPrescriptionEmail = async (
 
     const transporter = createTransporter();
 
-    // const fromAddress =
-    //   process.env.EMAIL_FROM || `"Docflex Pro" <${process.env.EMAIL_USER}>`;
     const fromAddress =
       process.env.EMAIL_FROM ||
       `${prescriptionData.centerId.centerName} <${process.env.EMAIL_USER}>`;

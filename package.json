@@ -30,6 +30,10 @@
     "nodemailer": "^7.0.5",
     "pdf-parse": "^1.1.1",
     "pdfkit": "^0.17.1",
+    "puppeteer": "^24.18.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-icons": "^5.5.0",
     "sharp": "^0.34.3",
     "twilio": "^5.8.0",
     "zod": "^3.25.74"
@@ -45,6 +49,8 @@
     "@types/nodemailer": "^6.4.19",
     "@types/pdf-parse": "^1.1.5",
     "@types/pdfkit": "^0.17.2",
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.8.3"
   }

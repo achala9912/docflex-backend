@@ -1,57 +1,51 @@
-export interface PatientDetails {
-  title: string;
-  patientName: string;
-  age: string;
-  contactNo: string;
-  email: string;
-  [key: string]: any;
-}
-
-export interface VitalSigns {
-  weight: string;
-  height: string;
-  bmi: string;
-  pulseRate: string;
-  [key: string]: any;
-}
-
-export interface Medication {
-  productName: string;
-  genericName: string;
-  dose: string;
-  frequency: string;
-  duration: string;
-  note?: string;
-  [key: string]: any;
-}
-
-export interface PrescriberDetails {
-  name: string;
-  specialization: string;
-  slmcNo: string;
-  [key: string]: any;
-}
-
-export interface MedicalCenter {
-  centerName: string;
-  address: string;
-  town?: string;
-  email: string;
-  contactNo: string;
-  [key: string]: any;
-}
-
 export interface PrescriptionData {
-  prescriptionNo: string;
-  createdAt: string | Date;
-  patientId: PatientDetails;
-  vitalSigns?: VitalSigns[];
-  symptoms?: string;
+  centerId: {
+    centerName?: string;
+    contactNo?: string;
+    address?: string;
+    town?: string;
+    logo?: string;
+    email?: string;
+  };
+  prescriptionNo?: string;
+  createdAt: string;
+  patientId: {
+    patientName: string;
+    age: string;
+    contactNo: string;
+    email: string;
+    gender?: string;
+    dob?: string;
+    title?: string;
+  };
   reasonForVisit: string;
+  symptoms: string[];
+  labTests: string[];
+  vitalSigns: {
+    weight?: string;
+    height?: string;
+    bmi?: string;
+    pulseRate?: string;
+    temperature?: string;
+  }[];
   clinicalDetails: string;
   advice: string;
-  medications: Medication[];
-  prescriberDetails: PrescriberDetails;
-  centerId: MedicalCenter;
-  [key: string]: any;
+  remark?: string;
+  medications: {
+    productName: string;
+    dose: string;
+    frequency: string;
+    doseUnit: string;
+    duration: string;
+    note?: string;
+    route: string;
+    genericName: string;
+  }[];
+  prescriberDetails: {
+    name: string;
+    specialization: string;
+    slmcNo: string;
+    title?: string;
+    digitalSignature?: string;
+  };
 }
