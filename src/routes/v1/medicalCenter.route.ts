@@ -27,7 +27,6 @@ router.get(
 );
 router.get(
   "/constants",
-  checkPermission(PERMISSIONS.CENTER_READ),
   medicalCenterController.getCentersForSuggestionController
 );
 

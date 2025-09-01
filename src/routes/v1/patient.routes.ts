@@ -41,7 +41,6 @@ router.get(
 
 router.get(
   "/suggestions",
-  checkPermission(PERMISSIONS.PATIENT_MANAGEMENT),
   patientController.getPatientSuggestions
 );
 
