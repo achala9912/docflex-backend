@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import { IPrescription } from "../interfaces/prescription.interface";
-import { ACTIONS } from "../constants/modification-history.constant";
+import encrypt from "mongoose-encryption";
 
 const PrescriptionSchema = new Schema<IPrescription>(
   {
@@ -17,6 +17,7 @@ const PrescriptionSchema = new Schema<IPrescription>(
       required: true,
     },
     patientId: { type: Schema.Types.ObjectId, ref: "Patient", required: true },
+
     reasonForVisit: { type: String, required: true },
     symptoms: [{ type: String }],
     labTests: [{ type: String }],
@@ -56,7 +57,7 @@ const PrescriptionSchema = new Schema<IPrescription>(
     },
     modificationHistory: [
       {
-        action: { type: String, enum: Object.values(ACTIONS) },
+        action: { type: String },
         modifiedBy: { type: String },
         date: { type: Date, default: Date.now },
       },
@@ -64,6 +65,25 @@ const PrescriptionSchema = new Schema<IPrescription>(
   },
   { timestamps: true }
 );
+
+const encKey = process.env.DB_ENCRYPTION_KEY as string; 
+const sigKey = process.env.DB_SIGNING_KEY as string; 
+
+PrescriptionSchema.plugin(encrypt, {
+  encryptionKey: encKey,
+  signingKey: sigKey,
+  encryptedFields: [
+    "reasonForVisit",
+    "symptoms",
+    "labTests",
+    "vitalSigns",
+    "clinicalDetails",
+    "advice",
+    "medications",
+    "remark",
+    "prescriberDetails.digitalSignature",
+  ],
+});
 
 const Prescription = mongoose.model<IPrescription>(
   "Prescription",
