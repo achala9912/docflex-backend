@@ -1,12 +1,41 @@
+
 import puppeteer from "puppeteer";
 import { PrescriptionTemplateProps } from "./components/PrescriptionTemplate";
 import { generatePrescriptionHTML } from "./components/htmlPrescriptionTemplate";
+import { convertImageToDataURL } from "./imageUtils";
 
 export async function generatePrescriptionPDF(
   data: PrescriptionTemplateProps
 ): Promise<Buffer> {
   try {
-    const htmlContent = generatePrescriptionHTML(data);
+ 
+    let logoDataURL = "";
+    if (data.centerId.logo) {
+      logoDataURL = await convertImageToDataURL(data.centerId.logo);
+    }
+
+    // Convert digital signature to data URL if it exists
+    let signatureDataURL = "";
+    if (data.prescriberDetails.digitalSignature) {
+      signatureDataURL = await convertImageToDataURL(
+        data.prescriberDetails.digitalSignature
+      );
+    }
+
+    // Create a modified data object with data URLs
+    const dataWithDataURLs = {
+      ...data,
+      centerId: {
+        ...data.centerId,
+        logo: logoDataURL,
+      },
+      prescriberDetails: {
+        ...data.prescriberDetails,
+        digitalSignature: signatureDataURL,
+      },
+    };
+
+    const htmlContent = generatePrescriptionHTML(dataWithDataURLs);
 
     const browser = await puppeteer.launch({
       headless: true,
@@ -22,9 +51,8 @@ export async function generatePrescriptionPDF(
         printBackground: true,
         margin: { top: "20px", bottom: "20px", left: "20px", right: "20px" },
       });
-      
-      const pdfBuffer = Buffer.from(pdfUint8Array);
-      return pdfBuffer;
+
+      return Buffer.from(pdfUint8Array);
     } finally {
       await browser.close();
     }
