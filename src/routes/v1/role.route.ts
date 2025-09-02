@@ -56,9 +56,10 @@ import authMiddleware from "../../middlewares/auth.middleware";
 const router = express.Router();
 
 router.use(authMiddleware);
-router.use(checkPermission(PERMISSIONS.ROLE_READ));
 
-// Create Role
+router.get("/constant", roleController.getRoleSuggestion);
+router.get("/permission-constant", roleController.getPermissionsConstant);
+
 router.post(
   "/",
   checkPermission(PERMISSIONS.ROLE_CREATE),
@@ -66,19 +67,9 @@ router.post(
   roleController.createRole
 );
 
-// Get All Roles
-router.get("/", roleController.getAllRoles);
+router.get("/", checkPermission(PERMISSIONS.ROLE_READ), roleController.getAllRoles);
+router.get("/:roleId", checkPermission(PERMISSIONS.ROLE_READ), roleController.getRoleById);
 
-// Get Permission constant 
-router.get("/permission-constant", roleController.getPermissionsConstant);
-
-// Get role suggestions 
-router.get("/constant", roleController.getRoleSuggestion);
-
-// Get Single Role 
-router.get("/:roleId", roleController.getRoleById);
-
-// Update Role
 router.put(
   "/:roleId",
   checkPermission(PERMISSIONS.ROLE_UPDATE),
@@ -86,11 +77,11 @@ router.put(
   roleController.updateRole
 );
 
-// Delete Role
 router.delete(
   "/:roleId",
   checkPermission(PERMISSIONS.ROLE_DELETE),
   roleController.deleteRole
 );
+
 
 export default router;
