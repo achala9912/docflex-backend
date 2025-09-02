@@ -1,15 +1,3 @@
-// export const PERMISSIONS = {
-//   USER_MANAGEMENT: "User management",
-//   ROLE_MANAGEMENT: "Role management",
-
-// };
-
-// export const PERMISSIONS_LIST = [
-//   {
-//     name: "User management",
-//     permissions: [PERMISSIONS.USER_MANAGEMENT, PERMISSIONS.ROLE_MANAGEMENT],
-//   },
-// ];
 export const PERMISSIONS = {
   // User permissions
   USER_CREATE: "user:create",
@@ -23,49 +11,35 @@ export const PERMISSIONS = {
   ROLE_UPDATE: "role:update",
   ROLE_DELETE: "role:delete",
 
-  // Patient permissions
-  PATIENT_CREATE: "patient:create",
-  PATIENT_READ: "patient:read",
-  PATIENT_UPDATE: "patient:update",
-  PATIENT_DELETE: "patient:delete",
+  // Medical Center permissions
+  CENTER_CREATE: "center:create",
+  CENTER_READ: "center:read",
+  CENTER_UPDATE: "center:update",
+  CENTER_DELETE: "center:delete",
 
+  PATIENT_MANAGEMENT: "patient:management",
+  SESSION_MANAGEMENT: "session:management",
+  GENERICNAME_MANAGEMENT: "generic:management",
   // Appointment permissions
-  APPOINTMENT_CREATE: "appointment:create",
-  APPOINTMENT_READ: "appointment:read",
-  APPOINTMENT_UPDATE: "appointment:update",
-  APPOINTMENT_DELETE: "appointment:delete",
+  APPOINTMENT_MANAGEMENT: "appointment:management",
+
+  // Product permissions
+  PRODUCT_MANAGEMENT: "product:management",
+  // Prescription permissions
+
+  PRESCRIPTION_CREATE: "prescription:create",
+  PRESCRIPTION_CANCEL: "prescription:cancel",
+  PRESCRIPTION_UPDATE: "prescription:update",
+  PRESCRIPTION_READ: "prescription:read",
 } as const;
+
+export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
 export const DEFAULT_ROLES = [
   {
-    roleName: "Admin",
+    roleName: "SystemAdmin",
     permissions: Object.values(PERMISSIONS),
   },
-  {
-    roleName: "Doctor",
-    permissions: [
-      PERMISSIONS.PATIENT_READ,
-      PERMISSIONS.PATIENT_CREATE,
-      PERMISSIONS.PATIENT_UPDATE,
-      PERMISSIONS.APPOINTMENT_CREATE,
-      PERMISSIONS.APPOINTMENT_READ,
-      PERMISSIONS.APPOINTMENT_UPDATE,
-    ],
-  },
-  {
-    roleName: "Nurse",
-    permissions: [
-      PERMISSIONS.PATIENT_READ,
-      PERMISSIONS.APPOINTMENT_READ,
-      PERMISSIONS.APPOINTMENT_CREATE,
-    ],
-  },
-  {
-    roleName: "Assistant",
-    permissions: [PERMISSIONS.PATIENT_READ, PERMISSIONS.APPOINTMENT_READ],
-  },
 ];
-
-export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
 export default PERMISSIONS;

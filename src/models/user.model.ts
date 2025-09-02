@@ -11,6 +11,7 @@ const userSchema = new Schema<IUserDocument>(
     name: { type: String, required: true },
     userName: { type: String, required: true, unique: true },
     role: { type: mongoose.Schema.Types.ObjectId, ref: "Role", required: true },
+    centerId: { type: mongoose.Schema.Types.ObjectId, ref: "MedicalCenter" },
     gender: {
       type: String,
       enum: Object.values(GENDERS),
@@ -22,6 +23,8 @@ const userSchema = new Schema<IUserDocument>(
     contactNo: { type: String, required: true },
     password: { type: String, required: true, select: false },
     remarks: { type: String },
+    digitalSignature: { type: String },
+    profilePicture: { type: String },
     isActive: { type: Boolean, default: true },
     isNewUser: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false },
@@ -33,18 +36,22 @@ const userSchema = new Schema<IUserDocument>(
         date: { type: Date, default: Date.now },
       },
     ],
+    // Add for OTP
+    resetOtp: { type: String },
+    resetOtpExpiry: { type: Date },
   },
-  { 
+  {
     timestamps: true,
     toJSON: {
-      transform: function(doc, ret) {
-        delete ret.password; 
-      }
-    }
+      transform: function (doc, ret) {
+        delete ret.password;
+        delete ret.resetOtp;
+        delete ret.resetOtpExpiry;
+      },
+    },
   }
 );
 
-// Hash password before saving
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
 
@@ -57,7 +64,6 @@ userSchema.pre("save", async function (next) {
   }
 });
 
-// Method to compare passwords
 userSchema.methods.comparePassword = async function (
   candidatePassword: string
 ): Promise<boolean> {

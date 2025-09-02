@@ -1,115 +1,178 @@
 import { Request, Response } from "express";
-import userService from "../services/user.service";
+import * as userService from "../services/user.service";
+import { ACTIONS } from "../constants/modification-history.constant";
 
-class UserController {
-  // async getAllUsers(req: Request, res: Response): Promise<void> {
-  //   try {
-  //     console.log("📥 Received request to fetch all users");
-
-  //     const users = await userService.getAllUsers();
-
-  //     console.log(`✅ Fetched ${users.length} users`);
-  //     res.json(users);
-  //   } catch (error) {
-  //     const errorMessage =
-  //       error instanceof Error ? error.message : "Internal server error";
-
-  //     console.error("❌ Error fetching users:", errorMessage);
-  //     res.status(500).json({ error: errorMessage });
-  //   }
-  // }
-  async getAllUsers(req: Request, res: Response): Promise<void> {
-    try {
-      const users = await userService.getAllUsers(req.query);
-      res.status(200).json(users);
-    } catch (error) {
-      console.error("❌ Failed to fetch users:", error);
-      res.status(500).json({ error: "Failed to fetch users" });
+export const getAllUsers = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.tokenData) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
     }
+
+    const users = await userService.getAllUsers(req.query, req.tokenData);
+    res.status(200).json(users);
+  } catch (error) {
+    console.error("❌ Error fetching users:", error);
+    res.status(500).json({
+      error: "Server error",
+      details: error instanceof Error ? error.message : undefined,
+    });
   }
+};
 
-  async createUser(req: Request, res: Response): Promise<void> {
-    try {
-      console.log("📥 Received request to create user:", req.body);
+// export const createUser = async (
+//   req: Request,
+//   res: Response
+// ): Promise<void> => {
+//   try {
+//     console.log("📥 Received request to create user:", req.body);
+//     const newUser = await userService.createUser(req.body);
+//     console.log(`✅ User created successfully: ${newUser.userId}`);
+//     res.status(201).json(newUser);
+//   } catch (error) {
+//     const errorMessage =
+//       error instanceof Error ? error.message : "Internal server error";
+//     console.error("❌ Error creating user:", errorMessage);
+//     res.status(400).json({ error: errorMessage });
+//   }
+// };
+export const createUser = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const createdBy = req.tokenData?.userId || "System";
 
-      const newUser = await userService.createUser(req.body);
+    // Generate temporary password
+    const tempPassword = Math.random().toString(36).slice(-8);
 
-      console.log(`✅ User created successfully: ${newUser.userId}`);
-      res.status(201).json(newUser);
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Internal server error";
+    const newUserData = {
+      ...req.body,
+      password: tempPassword,
+      profilePicture: req.body.profilePicture || "",
+      modificationHistory: [
+        {
+          action: ACTIONS.CREATE,
+          modifiedBy: createdBy,
+          date: new Date(),
+        },
+      ],
+    };
 
-      console.error("❌ Error creating user:", errorMessage);
-      res.status(400).json({ error: errorMessage });
+    const newUser = await userService.createUser(newUserData);
+
+    res.status(201).json({
+      success: true,
+      message: "User created successfully. Temporary password sent via email.",
+      user: newUser,
+    });
+  } catch (error: any) {
+    let errorMessage = "Internal server error";
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyValue)[0];
+      const value = error.keyValue[field];
+      errorMessage = `${
+        field.charAt(0).toUpperCase() + field.slice(1)
+      } '${value}' already exists.`;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
     }
+
+    console.error("❌ Error creating user:", errorMessage);
+    res.status(400).json({ success: false, message: errorMessage });
   }
+};
 
-  async getUserById(req: Request, res: Response): Promise<void> {
-    try {
-      console.log(`🔍 Received request to fetch user: ${req.params.userId}`);
+export const getUserById = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const user = await userService.getUserById(req.params.userId);
 
-      const user = await userService.getUserById(req.params.userId);
-
-      if (!user) {
-        console.warn(`⚠️ User not found: ${req.params.userId}`);
-        res.status(404).json({ error: "User not found" });
-        return;
-      }
-
-      console.log(`✅ User found: ${user.userName}`);
-      res.json(user);
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Internal server error";
-
-      console.error("❌ Error fetching user:", errorMessage);
-      res.status(500).json({ error: errorMessage });
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
     }
+
+    res.json(user);
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Internal server error";
+    console.error("❌ Error fetching user:", errorMessage);
+    res.status(500).json({ error: errorMessage });
   }
+};
 
-  async updateUser(req: Request, res: Response): Promise<void> {
-    try {
-      console.log(`✏️ Received request to update user: ${req.params.userId}`);
-      console.log("📝 Update payload:", req.body);
+export const updateUser = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const modifiedBy = req.tokenData?.userId || "System";
 
-      const updatedUser = await userService.updateUser(
-        req.params.userId,
-        req.body
-      );
+    // Include modificationHistory entry
+    const updateData = {
+      ...req.body,
+      $push: {
+        modificationHistory: {
+          action: ACTIONS.UPDATE,
+          modifiedBy,
+          date: new Date(),
+        },
+      },
+    };
 
-      if (updatedUser) {
-        console.log(`✅ User updated: ${updatedUser.userId}`);
-      } else {
-        console.warn(`⚠️ User not found for update: ${req.params.userId}`);
-      }
+    const updatedUser = await userService.updateUser(
+      req.params.userId,
+      updateData
+    );
 
-      res.json(updatedUser);
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Bad request";
-
-      console.error("❌ Error updating user:", errorMessage);
-      res.status(400).json({ error: errorMessage });
+    if (!updatedUser) {
+      res.status(404).json({ success: false, message: "User not found" });
+      return;
     }
+
+    res.json({
+      success: true,
+      message: "User updated successfully.",
+      user: updatedUser,
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Bad request";
+    console.error("❌ Error updating user:", errorMessage);
+    res.status(400).json({ success: false, message: errorMessage });
   }
+};
 
-  async deleteUser(req: Request, res: Response): Promise<void> {
-    try {
-      console.log(`🗑️ Received request to delete user: ${req.params.userId}`);
-
-      await userService.deleteUser(req.params.userId);
-
-      console.log(`✅ User deleted: ${req.params.userId}`);
-      res.status(204).send();
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Internal server error";
-
-      console.error("❌ Error deleting user:", errorMessage);
-      res.status(500).json({ error: errorMessage });
+export const deleteUser = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const deletedUser = await userService.deleteUser(req.params.userId);
+    if (!deletedUser) {
+      res.status(404).json({ error: "User not found" });
+      return;
     }
+    res.status(200).json(deletedUser);
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Internal server error";
+    console.error("❌ Error deleting user:", errorMessage);
+    res.status(500).json({ error: errorMessage });
   }
-}
+};
 
-export default new UserController();
+export const getAllUsersSuggestion = async (req: Request, res: Response) => {
+  try {
+    const users = await userService.getUsersForSuggestion(req.query);
+    res.status(200).json(users);
+  } catch (error: any) {
+    console.error("Error retrieving users:", error.message);
+    res.status(500).json({ error: "Server error" });
+  }
+};
