@@ -40,7 +40,7 @@ export const createPrescriptionService = async (data: any, userId: string) => {
     ...data,
     prescriptionNo,
     createdBy: userId,
-    patientName: patient.patientName, // unencrypted
+    patientName: patient.patientName,
     modificationHistory: [
       { action: ACTIONS.CREATE, modifiedBy: userId, date: new Date() },
     ],
@@ -117,20 +117,36 @@ export const updatePrescriptionService = async (
   data: any,
   userId: string
 ) => {
-  return Prescription.findOneAndUpdate(
-    { prescriptionNo, isDeleted: false },
-    {
-      ...data,
-      $push: {
-        modificationHistory: {
-          action: ACTIONS.UPDATE,
-          modifiedBy: userId,
-          date: new Date(),
-        },
-      },
-    },
-    { new: true }
-  );
+  const prescription = await Prescription.findOne({
+    prescriptionNo,
+    isDeleted: false,
+  });
+
+  if (!prescription) throw new Error("Prescription not found");
+
+
+  prescription.centerId = data.centerId;
+  prescription.prescriptionType = data.prescriptionType;
+  prescription.appointmentId = data.appointmentId;
+  prescription.patientId = data.patientId;
+  prescription.reasonForVisit = data.reasonForVisit;
+  prescription.symptoms = data.symptoms;
+  prescription.labTests = data.labTests;
+  prescription.clinicalDetails = data.clinicalDetails;
+  prescription.advice = data.advice;
+  prescription.remark = data.remark;
+  prescription.vitalSigns = data.vitalSigns;
+  prescription.medications = data.medications;
+  prescription.prescriberDetails = data.prescriberDetails;
+
+
+  prescription.modificationHistory.push({
+    action: ACTIONS.UPDATE,
+    modifiedBy: userId,
+    date: new Date(),
+  });
+
+  return prescription.save(); 
 };
 
 export const cancelPrescriptionService = async (
@@ -152,57 +168,6 @@ export const cancelPrescriptionService = async (
     { new: true }
   );
 };
-
-// export const sendPrescriptionEmailService = async (
-//   prescriptionNo: string,
-//   userId: string
-// ): Promise<any> => {
-//   const prescription = await Prescription.findOne({
-//     prescriptionNo,
-//     isDeleted: false,
-//   })
-//     .populate("patientId")
-//     .populate("centerId")
-//     .populate("appointmentId");
-
-//   if (!prescription) {
-//     throw new Error("Prescription not found");
-//   }
-
-//   // Check if patient has email - add type assertion for TypeScript
-//   const patientEmail = (prescription.patientId as any).email;
-//   if (!patientEmail) {
-//     throw new Error("Patient does not have an email address");
-//   }
-
-//   // Generate PDF - you may need to cast the prescription to the correct type
-//   const pdfBuffer = await generatePrescriptionPDF(
-//     prescription as unknown as PrescriptionData
-//   );
-
-//   // Send email
-//   await sendPrescriptionEmail(
-//     patientEmail,
-//     prescription as unknown as PrescriptionData,
-//     pdfBuffer
-//   );
-
-//   // Update modification history
-//   return Prescription.findOneAndUpdate(
-//     { prescriptionNo, isDeleted: false },
-//     {
-//       $push: {
-//         modificationHistory: {
-//           action: "EMAIL_SENT",
-//           modifiedBy: userId,
-//           date: new Date(),
-//           details: `Prescription sent to ${patientEmail}`,
-//         },
-//       },
-//     },
-//     { new: true }
-//   );
-// };
 
 export const sendPrescriptionEmailService = async (
   prescriptionNo: string,
