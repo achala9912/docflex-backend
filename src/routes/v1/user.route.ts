@@ -27,7 +27,6 @@ router.get("/constant", userController.getAllUsersSuggestion);
 
 router.get(
   "/:userId",
-  checkPermission(PERMISSIONS.USER_READ),
   userController.getUserById
 );
 
