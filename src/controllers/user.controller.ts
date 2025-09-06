@@ -23,22 +23,7 @@ export const getAllUsers = async (
   }
 };
 
-// export const createUser = async (
-//   req: Request,
-//   res: Response
-// ): Promise<void> => {
-//   try {
-//     console.log("📥 Received request to create user:", req.body);
-//     const newUser = await userService.createUser(req.body);
-//     console.log(`✅ User created successfully: ${newUser.userId}`);
-//     res.status(201).json(newUser);
-//   } catch (error) {
-//     const errorMessage =
-//       error instanceof Error ? error.message : "Internal server error";
-//     console.error("❌ Error creating user:", errorMessage);
-//     res.status(400).json({ error: errorMessage });
-//   }
-// };
+
 export const createUser = async (
   req: Request,
   res: Response
@@ -114,7 +99,7 @@ export const updateUser = async (
   try {
     const modifiedBy = req.tokenData?.userId || "System";
 
-    // Include modificationHistory entry
+
     const updateData = {
       ...req.body,
       $push: {

@@ -15,7 +15,7 @@ export const createUser = async (userData: IUserInput): Promise<IUser> => {
   const roleExists = await Role.findOne({ roleId: userData.role });
   if (!roleExists) throw new Error("Role not found");
 
-  // 🔍 Check if userName OR email already exists in the same center
+
   const existingUser = await User.findOne({
     centerId: userData.centerId,
     isDeleted: { $ne: true },
@@ -161,7 +161,7 @@ export const getUserById = async (userId: string): Promise<IUser | null> => {
   return user as IUser | null;
 };
 
-// Update User
+
 export const updateUser = async (
   userId: string,
   updateData: Partial<IUser>

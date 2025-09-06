@@ -3,7 +3,7 @@ import { IMedicalCenter } from "../interfaces/medicalCenter.interface";
 import { ACTIONS } from "../constants/modification-history.constant";
 import User from "../models/user.model";
 
-// Helper function to generate center ID
+
 const generateCenterId = async (): Promise<string> => {
   const lastCenter = await MedicalCenter.findOne()
     .sort({ centerId: -1 })
@@ -14,7 +14,6 @@ const generateCenterId = async (): Promise<string> => {
   return `MC${String(lastIdNum + 1).padStart(4, "0")}`;
 };
 
-// Create new medical center
 export const createCenter = async (
   data: Partial<IMedicalCenter>,
   createdBy: string
@@ -38,7 +37,7 @@ export const createCenter = async (
   return savedCenter.toObject();
 };
 
-// Get all medical centers with pagination and search
+
 export const getAllCenters = async (params: {
   page?: number;
   limit?: number;
@@ -83,14 +82,14 @@ export const getAllCenters = async (params: {
   };
 };
 
-// Get single center by ID
+
 export const getCenterById = async (
   centerId: string
 ): Promise<IMedicalCenter | null> => {
   return MedicalCenter.findOne({ centerId, isDeleted: false }).lean();
 };
 
-// Update medical center
+
 export const updateCenter = async (
   centerId: string,
   data: Partial<IMedicalCenter>,
@@ -116,7 +115,7 @@ export const updateCenter = async (
     }
   });
 
-  // Add to modification history if there were changes
+
   if (Object.keys(changes).length > 0) {
     center.modificationHistory.push({
       action: ACTIONS.UPDATE,
@@ -130,28 +129,7 @@ export const updateCenter = async (
   return updatedCenter.toObject();
 };
 
-// Soft delete medical center
-// export const deleteCenter = async (
-//   centerId: string,
-//   deletedBy: string
-// ): Promise<IMedicalCenter | null> => {
-//   const center = await MedicalCenter.findOneAndUpdate(
-//     { centerId },
-//     {
-//       isDeleted: true,
-//       $push: {
-//         modificationHistory: {
-//           action: ACTIONS.DELETE,
-//           modifiedBy: deletedBy,
-//           date: new Date(),
-//         },
-//       },
-//     },
-//     { new: true }
-//   ).lean();
 
-//   return center;
-// };
 export const deleteCenter = async (
   centerId: string,
   deletedBy: string
@@ -160,7 +138,7 @@ export const deleteCenter = async (
   message: string;
   data?: IMedicalCenter | null;
 }> => {
-  // Check if users exist under this center
+
   const userCount = await User.countDocuments({ centerId, isDeleted: false });
   if (userCount > 0) {
     return {

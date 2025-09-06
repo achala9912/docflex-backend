@@ -11,10 +11,10 @@ import {
   sessionDeactivationTemplate,
 } from "../utils/otpEmailTemplates";
 
-// Initialize Twilio client (if not already done)
+
 const client = twilio(process.env.TWILIO_SID!, process.env.TWILIO_AUTH_TOKEN!);
 
-// Initialize nodemailer transporter (if not already done)
+
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -187,57 +187,6 @@ export const deleteSession = async (
   );
 };
 
-// export const toggleSessionActive = async (
-//   sessionId: string,
-//   isActive: boolean,
-//   modifiedBy: string
-// ): Promise<ISession | null> => {
-//   const session = await Session.findOne({ sessionId });
-//   if (!session) {
-//     throw new Error("Session not found");
-//   }
-
-//   const now = new Date();
-
-//   if (isActive) {
-//     const timeOptions: Intl.DateTimeFormatOptions = {
-//       hour: "numeric",
-//       minute: "numeric",
-//       hour12: true,
-//     };
-
-//     if (session.startTime && session.startTime > now) {
-//       throw new Error(
-//         `Session "${
-//           session.sessionName || session.sessionId
-//         }" cannot be activated yet. It starts at ${session.startTime.toLocaleTimeString(
-//           undefined,
-//           timeOptions
-//         )}.`
-//       );
-//     }
-
-//     if (session.endTime && session.endTime < now) {
-//       throw new Error(
-//         `Session "${
-//           session.sessionName || session.sessionId
-//         }" has already ended at ${session.endTime.toLocaleTimeString(
-//           undefined,
-//           timeOptions
-//         )} and cannot be activated.`
-//       );
-//     }
-//   }
-
-//   session.isSessionActive = isActive;
-//   session.modificationHistory.push({
-//     action: isActive ? ACTIONS.ACTIVATE : ACTIONS.DEACTIVATE,
-//     modifiedBy,
-//     date: new Date(),
-//   });
-
-//   return await session.save();
-// };
 
 export const getSessionSuggestions = async (params: {
   centerId?: string;

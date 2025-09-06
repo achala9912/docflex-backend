@@ -168,7 +168,7 @@ export const getProductSuggestion = async (
   if (!centerId) {
     throw new Error("centerId is required");
   }
-  // Populate genericId and cast the result type
+
   const products = await Product.find(query)
     .limit(50)
     .select("productId productName genericId")

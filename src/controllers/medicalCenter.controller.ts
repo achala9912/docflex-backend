@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import * as medicalCenterService from "../services/medicalCenter.service";
 
-// Create new medical center
+
 export const createMedicalCenter = async (
   req: Request,
   res: Response
@@ -18,7 +18,7 @@ export const createMedicalCenter = async (
   }
 };
 
-// Get all medical centers with pagination
+
 export const getAllMedicalCenters = async (
   req: Request,
   res: Response
@@ -48,7 +48,6 @@ export const getAllMedicalCenters = async (
   }
 };
 
-// Get single medical center by ID
 export const getMedicalCenterById = async (
   req: Request,
   res: Response
@@ -75,7 +74,7 @@ export const getMedicalCenterById = async (
   }
 };
 
-// Update medical center
+
 export const updateMedicalCenter = async (
   req: Request,
   res: Response
@@ -101,29 +100,6 @@ export const updateMedicalCenter = async (
   }
 };
 
-// export const deleteMedicalCenter = async (
-//   req: Request,
-//   res: Response
-// ): Promise<void> => {
-//   try {
-//     const deleted = await medicalCenterService.deleteCenter(
-//       req.params.centerId,
-//       req.tokenData?.userId || "system"
-//     );
-
-//     if (!deleted) {
-//       res.status(404).json({ error: "Medical center not found" });
-//       return;
-//     }
-
-//     res.status(204).send();
-//   } catch (error) {
-//     console.error("❌ Failed to delete medical center:", error);
-//     res.status(500).json({
-//       error: error instanceof Error ? error.message : "Delete failed",
-//     });
-//   }
-// };
 
 export const deleteMedicalCenter = async (
   req: Request,

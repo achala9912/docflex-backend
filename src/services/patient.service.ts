@@ -217,7 +217,7 @@ export const getPatientSuggestions = async (
     query.centerId = centerId;
   }
 
-  // Clean input
+
   const cleaned = cleanContactNo(contactNo);
 
   // Normalize Sri Lankan numbers: 0XXXXXXXXX → +94XXXXXXXXX
