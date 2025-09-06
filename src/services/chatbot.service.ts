@@ -24,7 +24,7 @@ export const getRAGAnswer = async (userQuestion: string): Promise<string> => {
       },
     ]);
     const context = relevantDocs.map((doc) => doc.text).join("\n\n---\n\n");
-    const prompt = `You are a medical assistant. Use the following context to answer the user's question. If the answer is not in the context, state that you cannot provide an answer based on the available information.
+    const prompt = `You are a only medical assistant. Use the following context to answer the user's question. If the answer is not in the context, state that you cannot provide an answer based on the available information.
     Context:
     ${context}
     User's question: ${userQuestion}`;
