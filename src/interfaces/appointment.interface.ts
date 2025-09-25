@@ -12,7 +12,6 @@ export interface IAppointment extends Document {
   date: Date;
   appointmentId: string;
   tokenNo: number;
-  // sessionId: string;
   sessionId: Types.ObjectId | string | ISession | null;
 
   status: string;

@@ -79,7 +79,6 @@ export const sendPrescriptionEmailHandler = async (
     const { prescriptionNo } = req.params;
     const userId = req.tokenData?.userId || "system";
 
-    // Use the imported service
     const result = await prescriptionService.sendPrescriptionEmailService(
       prescriptionNo,
       userId

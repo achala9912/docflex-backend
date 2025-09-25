@@ -23,11 +23,11 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ✅ Middlewares
+
 app.use(cors());
 app.use(express.json());
 
-// ✅ API Version 1 Router
+
 const v1Router = express.Router();
 v1Router.use("/auth", v1AuthRoutes);
 v1Router.use("/roles", v1RoleRoutes);

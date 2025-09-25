@@ -3,7 +3,7 @@ import { IPatient } from "../interfaces/patient.interface";
 import { ACTIONS } from "../constants/modification-history.constant";
 import MedicalCenter from "../models/medicalCenter.model";
 
-// ✅ Updated age calculation (returns string like "25Y", "5M", "12D")
+
 const calculateAge = (dob: Date): string => {
   const today = new Date();
 
@@ -46,21 +46,21 @@ export const createPatient = async (
     .sort({ patientId: -1 })
     .limit(1);
 
-  // Generate the patient ID
+
   const centerCode = center.centerId;
   const lastNumber = lastPatient
     ? parseInt(lastPatient.patientId.split("-PAT")[1])
     : 0;
   const patientId = `${centerCode}-PAT${lastNumber + 1}`;
 
-  // ✅ Calculate formatted age
+
   const age = calculateAge(new Date(patientData.dob));
 
-  // Create and save patient
+
   const patient = new Patient({
     ...patientData,
     patientId,
-    age, // 👈 now stored as "25Y", "5M", "12D"
+    age, 
     modificationHistory: [
       {
         action: ACTIONS.CREATE,
@@ -101,7 +101,7 @@ export const updatePatient = async (
     }
   });
 
-  // ✅ Update age if DOB changed
+
   if (updateData.dob) {
     patient.age = calculateAge(new Date(updateData.dob));
     changes.age = {

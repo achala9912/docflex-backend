@@ -24,5 +24,4 @@ export const UpdateRoleSchema = z.object({
     .optional(),
 });
 
-// Type for TypeScript
 export type IRoleInput = z.infer<typeof RoleSchema>;

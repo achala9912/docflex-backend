@@ -1,4 +1,4 @@
-// backend/utils/imageUtils.ts
+
 import axios from "axios";
 import { Types } from "mongoose";
 

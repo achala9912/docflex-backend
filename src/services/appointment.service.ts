@@ -27,7 +27,7 @@ export const createAppointment = async (
   appointmentData: any,
   createdBy: string
 ): Promise<IAppointment> => {
-  // 1. Validate medical center
+
   const center = await MedicalCenter.findById(appointmentData.centerId)
     .select("centerId centerName address contactNo")
     .lean();
@@ -36,10 +36,10 @@ export const createAppointment = async (
     throw new Error("Medical center not found");
   }
 
-  // Alias for template consistency
+
   const centerAddress = center?.address || "";
 
-  // 2. Get session
+
   const currentSession = await session
     .findOne({
       sessionId: appointmentData.sessionId,
@@ -52,7 +52,7 @@ export const createAppointment = async (
     throw new Error("Session not found for this center");
   }
 
-  // 3. Check if session end time has passed (for the given date)
+
   const appointmentDate = new Date(appointmentData.date);
   const sessionEnd = new Date(appointmentDate);
   sessionEnd.setHours(
@@ -66,7 +66,7 @@ export const createAppointment = async (
     throw new Error("Cannot create appointment after session end time");
   }
 
-  // 4. Prevent duplicate appointment for same patient on same date/session/center
+
   const startOfDay = new Date(appointmentDate);
   startOfDay.setHours(0, 0, 0, 0);
 
@@ -87,7 +87,7 @@ export const createAppointment = async (
     );
   }
 
-  // 5. Find last token for this session on the same date
+
   const lastAppointment = await appointment
     .findOne({
       sessionId: appointmentData.sessionId,
@@ -99,7 +99,7 @@ export const createAppointment = async (
 
   const tokenNo = lastAppointment ? lastAppointment.tokenNo + 1 : 1;
 
-  // 6. Generate appointmentId (include date so it's unique per day)
+
   const sessionCode = currentSession.sessionId
     .replace(/\s+/g, "")
     .toUpperCase();
@@ -117,7 +117,7 @@ export const createAppointment = async (
     .toString()
     .padStart(3, "0")}`;
 
-  // 7. Save appointment
+
   const now = new Date();
   const newAppointment = new appointment({
     ...appointmentData,
@@ -135,7 +135,7 @@ export const createAppointment = async (
 
   const savedAppointment = await newAppointment.save();
 
-  // 8. Fetch patient
+
   const patient = await Patient.findById(savedAppointment.patientId).lean();
 
   if (patient) {

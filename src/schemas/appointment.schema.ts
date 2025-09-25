@@ -1,15 +1,4 @@
-// import { z } from "zod";
 
-// export const AppointmentSchema = z.object({
-//   date: z.date({ required_error: "Date is required" }),
-//   appointmentId: z.string({ required_error: "Appointment ID is required" }),
-//   tokenNo: z.number({ required_error: "Token number is required" }),
-//   sessionId: z.string({ required_error: "Session ID is required" }),
-//   patientId: z.string({ required_error: "Patient ID is required" }),
-//   centerId: z.string({ required_error: "Center ID is required" }),
-// });
-
-// export const UpdateAppointmentSchema = AppointmentSchema.partial();
 import { z } from "zod";
 
 export const AppointmentSchema = z.object({

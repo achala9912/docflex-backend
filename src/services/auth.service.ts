@@ -5,40 +5,6 @@ import { ITokenData } from "../interfaces/token.interface";
 import { passwordResetTemplate } from "../utils/otpEmailTemplates";
 import nodemailer from "nodemailer";
 class AuthService {
-  // async login(
-  //   userName: string,
-  //   password: string
-  // ): Promise<{
-  //   user: IUserDocument;
-  //   token?: string;
-  //   mustResetPassword?: boolean;
-  // }> {
-  //   const user = (await User.findOne({ userName })
-  //     .select("+password +isNewUser")
-  //     .populate("role")
-  //     .exec()) as IUserDocument | null;
-  //   if (!user) throw new Error("Invalid credentials");
-
-  //   const isMatch = await user.comparePassword(password);
-  //   if (!isMatch) throw new Error("Invalid credentials");
-
-  //   if (!user.isActive) throw new Error("User account is inactive");
-
-  //   if (user.isNewUser) return { user, mustResetPassword: true };
-
-  //   const role = user.role as unknown as { roleId: string; roleName: string };
-
-  //   const tokenData: ITokenData = {
-  //     userId: user.userId,
-  //     role: role.roleId,
-  //     ...(role.roleName !== "SystemAdmin" &&
-  //       user.centerId && { centerId: user.centerId.toString() }),
-  //   };
-
-  //   const token = createToken(tokenData).token;
-
-  //   return { user, token };
-  // }
 
   async login(
     userName: string,
@@ -71,7 +37,7 @@ class AuthService {
 
     const token = createToken(tokenData).token;
 
-    //Instead of blocking login, just return flag
+
     if (user.isNewUser) {
       return { user, token, mustResetPassword: true };
     }
@@ -116,12 +82,12 @@ class AuthService {
     // Generate 4 digit OTP
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
 
-    // Save OTP and expiry (5 min) to user
+
     user.resetOtp = otp;
     user.resetOtpExpiry = new Date(Date.now() + 5 * 60 * 1000);
     await user.save();
 
-    // Send OTP to user email
+
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {

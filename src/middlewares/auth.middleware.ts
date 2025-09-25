@@ -30,7 +30,7 @@ const authMiddleware = async (
       success: false,
       message: "Authentication required: invalid or expired token",
     });
-    return; // ✅ avoid returning the response directly
+    return;
   }
 };
 

@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-// Helper: accept string or number, always return string, with field-specific errors
 const StringOrNumber = (field: string) =>
   z.union([
     z
@@ -45,7 +44,6 @@ export const PrescriptionSchema = z.object({
   advice: z.string().optional(),
   remark: z.string().optional(),
 
-  // ✅ single object, required
   vitalSigns: z.object({
     weight: StringOrNumber("Weight"),
     height: StringOrNumber("Height"),
@@ -54,7 +52,7 @@ export const PrescriptionSchema = z.object({
     pulseRate: StringOrNumber("Pulse Rate"),
   }),
 
-  // ✅ must have at least one medication
+
   medications: z
     .array(
       z.object({

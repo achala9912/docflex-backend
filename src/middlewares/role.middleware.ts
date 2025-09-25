@@ -1,141 +1,3 @@
-// import { Request, Response, NextFunction } from "express";
-// import * as roleService from "../services/role.service";
-// import { Permission } from "../constants/permissions.constants";
-
-// type AsyncExpressMiddleware = (
-//   req: Request,
-//   res: Response,
-//   next: NextFunction
-// ) => Promise<void>;
-
-// export const checkPermission = (
-//   requiredPermission: Permission
-// ): AsyncExpressMiddleware => {
-//   return async (
-//     req: Request,
-//     res: Response,
-//     next: NextFunction
-//   ): Promise<void> => {
-//     try {
-//       const roleId = req.tokenData?.role;
-
-//       console.log("🛂 Token data:", req.tokenData);
-//       console.log("🔍 Checking permission:", requiredPermission);
-
-//       if (!roleId || typeof roleId !== "string") {
-//         res.status(401).json({
-//           success: false,
-//           message: "Authentication required: missing or invalid role",
-//         });
-//         return;
-//       }
-
-//       const permissions = await roleService.getRolePermissions(roleId);
-//       console.log(`🔐 Permissions for role ${roleId}:`, permissions);
-
-//       if (!permissions.includes(requiredPermission)) {
-//         res.status(403).json({
-//           success: false,
-//           message: "Insufficient permissions",
-//           requiredPermission,
-//           yourPermissions: permissions,
-//         });
-//         return;
-//       }
-
-//       next();
-//     } catch (error) {
-//       console.error("❌ Error in checkPermission middleware:", error);
-//       next(error);
-//     }
-//   };
-// };
-
-// export const checkAnyPermission = (
-//   ...requiredPermissions: Permission[]
-// ): AsyncExpressMiddleware => {
-//   return async (
-//     req: Request,
-//     res: Response,
-//     next: NextFunction
-//   ): Promise<void> => {
-//     try {
-//       const roleId = req.tokenData?.role;
-
-//       console.log("🛂 Token data:", req.tokenData);
-//       console.log("🔍 Checking any of permissions:", requiredPermissions);
-
-//       if (!roleId || typeof roleId !== "string") {
-//         res.status(401).json({
-//           success: false,
-//           message: "Authentication required: missing or invalid role",
-//         });
-//         return;
-//       }
-
-//       const permissions = await roleService.getRolePermissions(roleId);
-//       console.log(`🔐 Permissions for role ${roleId}:`, permissions);
-
-//       const hasPermission = requiredPermissions.some((perm) =>
-//         permissions.includes(perm)
-//       );
-
-//       if (!hasPermission) {
-//         res.status(403).json({
-//           success: false,
-//           message: "Insufficient permissions",
-//           requiredPermissions,
-//           yourPermissions: permissions,
-//         });
-//         return;
-//       }
-
-//       next();
-//     } catch (error) {
-//       console.error("❌ Error in checkAnyPermission middleware:", error);
-//       next(error);
-//     }
-//   };
-// };
-
-// export const withPermissions = (
-//   permissions: Permission | Permission[],
-//   handler: (req: Request, res: Response) => Promise<void>
-// ): AsyncExpressMiddleware[] => {
-//   const middleware = Array.isArray(permissions)
-//     ? checkAnyPermission(...permissions)
-//     : checkPermission(permissions);
-
-//   return [
-//     middleware,
-//     async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-//       try {
-//         await handler(req, res);
-//       } catch (error) {
-//         next(error);
-//       }
-//     },
-//   ];
-// };
-
-// export const protectedRoute = (
-//   permission: Permission | Permission[],
-//   handler: (req: Request, res: Response) => Promise<void>
-// ): AsyncExpressMiddleware[] => {
-//   return [
-//     Array.isArray(permission)
-//       ? checkAnyPermission(...permission)
-//       : checkPermission(permission),
-//     async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-//       try {
-//         await handler(req, res);
-//       } catch (error) {
-//         next(error);
-//       }
-//     },
-//   ];
-// };
-
 import { Request, Response, NextFunction } from "express";
 import * as roleService from "../services/role.service";
 import { Permission } from "../constants/permissions.constants";
@@ -146,9 +8,7 @@ type AsyncExpressMiddleware = (
   next: NextFunction
 ) => Promise<void>;
 
-/**
- * Middleware to check a single required permission
- */
+
 export const checkPermission = (
   requiredPermission: Permission
 ): AsyncExpressMiddleware => {
@@ -164,7 +24,7 @@ export const checkPermission = (
           success: false,
           message: "Authentication required: missing or invalid role",
         });
-        return; // ✅ ensure void
+        return; 
       }
 
       const permissions = await roleService.getRolePermissions(roleId);
@@ -173,7 +33,7 @@ export const checkPermission = (
           success: false,
           message: "Role not found",
         });
-        return; // ✅ ensure void
+        return; 
       }
 
       console.log(`🔐 Permissions for role ${roleId}:`, permissions);
@@ -185,7 +45,7 @@ export const checkPermission = (
           requiredPermission,
           yourPermissions: permissions,
         });
-        return; // ✅ ensure void
+        return; 
       }
 
       next();
@@ -196,9 +56,7 @@ export const checkPermission = (
   };
 };
 
-/**
- * Middleware to check if the role has any of the required permissions
- */
+
 export const checkAnyPermission = (
   ...requiredPermissions: Permission[]
 ): AsyncExpressMiddleware => {
@@ -250,9 +108,7 @@ export const checkAnyPermission = (
   };
 };
 
-/**
- * Helper to wrap a handler with permission check(s)
- */
+
 export const withPermissions = (
   permissions: Permission | Permission[],
   handler: (req: Request, res: Response) => Promise<void>
@@ -273,9 +129,6 @@ export const withPermissions = (
   ];
 };
 
-/**
- * Shortcut to define a protected route
- */
 export const protectedRoute = (
   permission: Permission | Permission[],
   handler: (req: Request, res: Response) => Promise<void>

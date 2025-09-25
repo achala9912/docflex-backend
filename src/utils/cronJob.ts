@@ -7,7 +7,6 @@ cron.schedule("*/5 * * * *", async () => {
   try {
     const now = new Date();
 
-    // Find all sessions that are active but past endTime
     const expiredSessions = await Session.find({
       endTime: { $lt: now },
       isSessionActive: true,
@@ -17,7 +16,7 @@ cron.schedule("*/5 * * * *", async () => {
       session.isSessionActive = false;
       session.modificationHistory.push({
         action: ACTIONS.DEACTIVATE,
-        modifiedBy: "system", // cron job deactivation
+        modifiedBy: "system", 
         date: new Date(),
       });
       await session.save();

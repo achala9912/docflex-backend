@@ -8,6 +8,7 @@ export async function getAnswerFromLLM(prompt: string): Promise<string> {
       messages: [{ role: "user", content: prompt }],
       // model: "moonshotai/kimi-k2-instruct",
       model: "meta-llama/llama-4-scout-17b-16e-instruct",
+      // model: "openai/gpt-oss-120b",
     });
     return chatCompletion.choices[0]?.message?.content || "No response found.";
   } catch (error) {
